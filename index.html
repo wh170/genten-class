@@ -16965,10 +16965,22 @@ function friendlyRemoteError(error) {
       return '<article class="member-message-item" data-message-id="' + esc(m.id) + '">' +
         '<div class="member-message-item-head"><span>同窗留言</span><time>' + esc(formatTime(m.created_at)) + '</time></div>' +
         (text ? '<p class="member-message-item-text">' + esc(text) + '</p>' : '') +
-        (image ? '<a href="' + esc(image) + '" target="_blank" rel="noopener noreferrer"><img class="member-message-item-image" src="' + esc(image) + '" alt="留言图片" loading="lazy" referrerpolicy="no-referrer"></a>' : '') +
+        (image ? '<a href="' + esc(image) + '" target="_blank" rel="noopener noreferrer"><img class="member-message-item-image" src="' + esc(image) + '" alt="" loading="lazy" referrerpolicy="no-referrer"></a>' : '') +
         (can ? '<div class="member-message-item-actions"><button type="button" data-message-action="edit">编辑</button><button type="button" data-message-action="delete">删除</button></div>' : '') +
         '</article>';
     }).join('');
+    Array.prototype.forEach.call(list.querySelectorAll('.member-message-item-image'), function (img) {
+      img.addEventListener('error', function () {
+        var link = img.closest('a');
+        if (link) link.remove();
+        else img.remove();
+      });
+      if (img.complete && img.naturalWidth === 0) {
+        var link = img.closest('a');
+        if (link) link.remove();
+        else img.remove();
+      }
+    });
     var add = byId('memberMessageAdd');
     add.hidden = !can || msgs.length >= MAX_MESSAGES;
     if (msgs.length >= MAX_MESSAGES) {
