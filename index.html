@@ -7509,6 +7509,7 @@ svg {
 
 .class-overview-card {
   width: min(760px, 100%);
+  min-width: 0;
 }
 
 .class-overview-card .modal-head {
@@ -7843,6 +7844,137 @@ svg {
   font-size: 0.95em;
 }
 
+
+/* ==== 班级概况：管理员操作日志 ==== */
+.class-overview-tabs.is-admin {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.class-audit-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(198, 160, 95, 0.14);
+}
+
+.class-audit-kicker {
+  color: var(--faint);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.class-audit-refresh {
+  padding: 5px 9px;
+  font-size: 9px;
+}
+
+.class-audit-list {
+  display: grid;
+  gap: 9px;
+  max-height: 330px;
+  margin-top: 10px;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(198, 160, 95, 0.32) transparent;
+}
+
+.class-audit-card {
+  padding: 11px 12px;
+  border: 1px solid rgba(198, 160, 95, 0.16);
+  background: rgba(19, 14, 9, 0.44);
+}
+
+.class-audit-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.class-audit-action {
+  color: var(--gold-300);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.class-audit-operator {
+  margin-top: 3px;
+  color: var(--faint);
+  font-size: 9px;
+  letter-spacing: 0.02em;
+}
+
+.class-audit-time {
+  color: rgba(184, 160, 121, 0.54);
+  font-size: 9px;
+  line-height: 1.6;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.class-audit-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 9px;
+  color: rgba(216, 190, 147, 0.78);
+  font-size: 10px;
+}
+
+.class-audit-counts b {
+  color: var(--gold-200);
+  font-weight: 600;
+}
+
+.class-audit-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.class-audit-tag {
+  padding: 2px 6px;
+  border: 1px solid rgba(198, 160, 95, 0.22);
+  color: rgba(216, 190, 147, 0.82);
+  font-size: 9px;
+  line-height: 1.6;
+  background: rgba(33, 25, 15, 0.44);
+}
+
+.class-audit-tag.is-removed {
+  border-color: rgba(191, 109, 79, 0.34);
+  color: #d8ad96;
+  background: rgba(61, 27, 18, 0.18);
+}
+
+.class-audit-tag.is-teacher {
+  border-color: rgba(168, 148, 102, 0.28);
+}
+
+@media (max-width: 760px) {
+  .class-audit-card-head {
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .class-audit-time {
+    text-align: left;
+    white-space: normal;
+  }
+
+  .class-audit-counts {
+    gap: 8px;
+  }
+
+  .class-audit-list {
+    max-height: 290px;
+  }
+}
+
 @media (max-width: 1100px) {
   .class-overview-button {
     padding: 8px 9px;
@@ -7870,8 +8002,13 @@ svg {
   }
 
   .class-overview-tabs .auth-tab {
-    font-size: 9px;
-    letter-spacing: 0.04em;
+    min-width: 0;
+    padding: 7px 3px;
+    overflow: hidden;
+    font-size: 8.5px;
+    letter-spacing: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .class-activity-card {
@@ -9566,6 +9703,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       <div class="auth-tabs class-overview-tabs" role="tablist" aria-label="班级概况分页">
         <button class="auth-tab is-active" id="classTabBasic" type="button" role="tab" aria-selected="true" aria-controls="classPanelBasic" data-class-tab="basic">基本信息</button>
         <button class="auth-tab" id="classTabActivities" type="button" role="tab" aria-selected="false" aria-controls="classPanelActivities" data-class-tab="activities" tabindex="-1">班级活动记录</button>
+        <button class="auth-tab" id="classTabAudit" type="button" role="tab" aria-selected="false" aria-controls="classPanelAudit" data-class-tab="audit" tabindex="-1" hidden>操作日志</button>
       </div>
 
       <div class="class-overview-status" id="classOverviewStatus" role="status" aria-live="polite"></div>
@@ -9653,6 +9791,22 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
         <p class="class-overview-note">
           活动图片区暂为占位，预留 <code>class-images</code> 储存桶上传入口；接入后图片会以公开网址存入 <code>image_url</code>，不写入 base64。
+        </p>
+      </section>
+
+      <section class="class-overview-panel" id="classPanelAudit" role="tabpanel" aria-labelledby="classTabAudit" hidden>
+        <div class="class-audit-toolbar">
+          <span class="class-audit-kicker">管理员操作记录 · 最近 50 笔</span>
+          <button class="btn class-audit-refresh" id="classAuditRefresh" type="button">刷新</button>
+        </div>
+        <div class="class-audit-list" id="classAuditList" aria-live="polite"></div>
+        <div class="class-overview-empty" id="classAuditEmpty" hidden>
+          <span class="empty-seal" aria-hidden="true">鉴</span>
+          <p>尚无操作记录</p>
+          <small>每次保存名册后，这里会留下操作人、时间与增删名单。</small>
+        </div>
+        <p class="class-overview-note">
+          记录包含操作人、时间、保存前后人数，以及新增/移除的同学与老师；仅管理员可见。
         </p>
       </section>
     </div>
@@ -14854,6 +15008,7 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_tPnlZdhrpeg4TQ1lsdjp3A_WDep2zhC
 const SUPABASE_CDN_URL = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js';
 const CLASS_OVERVIEW_CACHE_KEY = 'hongtong-bighuai-class-v1:class-overview';
 const AUTH_STORAGE_KEY = 'hongtong-bighuai-class-v1:auth';
+const AUTH_TOKEN_KEY = 'hongtong-bighuai-class-v1:auth-token';
 
 const DEFAULT_CLASS_INFO = Object.freeze({
   name: '24级大数据2班',
@@ -15191,6 +15346,8 @@ function friendlyRemoteError(error) {
   let activities = [];
   let infoLoaded = false;
   let activitiesLoaded = false;
+  let auditLoaded = false;
+  let auditLoading = false;
   let infoBusy = false;
   let deleteTimer = null;
   let lastFocusedElement = null;
@@ -15244,6 +15401,16 @@ function friendlyRemoteError(error) {
       } else {
         dom.roleNote.textContent = '未登入：基本信息唯读，仅供浏览。';
       }
+    }
+
+    if (dom.tabs) dom.tabs.classList.toggle('is-admin', admin);
+    if (dom.auditTab) {
+      dom.auditTab.hidden = !admin;
+      dom.auditTab.setAttribute('aria-hidden', String(!admin));
+    }
+    if (!admin && dom.auditPanel) dom.auditPanel.hidden = true;
+    if (!admin && dom.auditTab && dom.auditTab.classList.contains('is-active')) {
+      activateTab('basic', { keepStatus: true });
     }
 
     if (dom.composer) dom.composer.hidden = !admin;
@@ -15578,27 +15745,189 @@ function friendlyRemoteError(error) {
     }
   }
 
+  function getAuditToken() {
+    try {
+      return window.localStorage.getItem(AUTH_TOKEN_KEY) || '';
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function auditActionLabel(action) {
+    switch (action) {
+      case 'admin_save': return '管理员保存名册';
+      case 'member_self_save': return '学生更新自己';
+      case 'self_save': return '学生更新自己';
+      default: return action || '名册更新';
+    }
+  }
+
+  function appendAuditTags(container, items, removed, kind) {
+    if (!Array.isArray(items)) return;
+    items.forEach((item) => {
+      const name = typeof item === 'string' ? item : (item && item.name);
+      if (!name) return;
+      const tag = document.createElement('span');
+      tag.className = `class-audit-tag${removed ? ' is-removed' : ''}${kind === 'teacher' ? ' is-teacher' : ''}`;
+      tag.textContent = `${removed ? '−' : '+'} ${name}`;
+      container.appendChild(tag);
+    });
+  }
+
+  function renderAudit(rows) {
+    if (!dom.auditList) return;
+    dom.auditList.replaceChildren();
+    const hasRows = Array.isArray(rows) && rows.length > 0;
+    if (dom.auditEmpty) dom.auditEmpty.hidden = hasRows;
+    if (!hasRows) return;
+
+    rows.forEach((row) => {
+      const card = document.createElement('article');
+      card.className = 'class-audit-card';
+
+      const head = document.createElement('div');
+      head.className = 'class-audit-card-head';
+
+      const identity = document.createElement('div');
+      const action = document.createElement('div');
+      action.className = 'class-audit-action';
+      action.textContent = auditActionLabel(row.action);
+      const operator = document.createElement('div');
+      operator.className = 'class-audit-operator';
+      const who = row.changed_by_name || row.changed_by || '未知';
+      const role = row.is_admin ? '管理员' : '学生';
+      const whoText = (who === role || who === '管理員') ? role : `${who} · ${role}`;
+      operator.textContent = whoText;
+      identity.append(action, operator);
+
+      const time = document.createElement('div');
+      time.className = 'class-audit-time';
+      const date = row.changed_at ? new Date(row.changed_at) : null;
+      time.textContent = date && !Number.isNaN(date.getTime())
+        ? date.toLocaleString('zh-CN', { hour12: false })
+        : '时间未知';
+
+      head.append(identity, time);
+
+      const counts = document.createElement('div');
+      counts.className = 'class-audit-counts';
+      [['同学', row.before_members_count, row.after_members_count],
+       ['老师', row.before_teachers_count, row.after_teachers_count]].forEach(([label, before, after]) => {
+        const line = document.createElement('span');
+        line.append(`${label} `);
+        const from = document.createElement('b');
+        from.textContent = String(before == null ? 0 : before);
+        const arrow = document.createTextNode(' → ');
+        const to = document.createElement('b');
+        to.textContent = String(after == null ? 0 : after);
+        line.append(from, arrow, to);
+        counts.appendChild(line);
+      });
+
+      const tags = document.createElement('div');
+      tags.className = 'class-audit-tags';
+      appendAuditTags(tags, row.added_members, false, 'member');
+      appendAuditTags(tags, row.removed_members, true, 'member');
+      appendAuditTags(tags, row.added_teachers, false, 'teacher');
+      appendAuditTags(tags, row.removed_teachers, true, 'teacher');
+      if (tags.childElementCount === 0) {
+        const none = document.createElement('span');
+        none.className = 'class-audit-tag';
+        none.textContent = '名册无增删';
+        tags.appendChild(none);
+      }
+
+      card.append(head, counts, tags);
+      dom.auditList.appendChild(card);
+    });
+  }
+
+  async function refreshAudit() {
+    if (!isAdmin() || auditLoading) return;
+    if (!dom.auditList) return;
+    const token = getAuditToken();
+    if (!token) {
+      setStatus('找不到管理员登录凭证，请重新登录后再查看操作日志。', 'error');
+      return;
+    }
+
+    auditLoading = true;
+    if (dom.auditRefresh) {
+      dom.auditRefresh.disabled = true;
+      dom.auditRefresh.textContent = '读取中…';
+    }
+    setStatus('正在读取操作日志…', 'loading');
+
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/class_audit_list`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ p_token: token, p_limit: 50 })
+      });
+
+      if (!response.ok) {
+        let detail = '';
+        try {
+          const data = await response.json();
+          detail = data && data.message ? data.message : '';
+        } catch (error) {
+          /* ignore */
+        }
+        throw new Error(detail || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const rows = Array.isArray(data) ? data : [];
+      renderAudit(rows);
+      auditLoaded = true;
+      setStatus(rows.length ? `操作日志已同步，共 ${rows.length} 笔。` : '目前还没有操作记录。', 'ok');
+    } catch (error) {
+      auditLoaded = true;
+      setStatus(`操作日志读取失败：${error && error.message ? error.message : '请稍后再试'}`, 'error');
+    } finally {
+      auditLoading = false;
+      if (dom.auditRefresh) {
+        dom.auditRefresh.disabled = false;
+        dom.auditRefresh.textContent = '刷新';
+      }
+    }
+  }
+
   function activateTab(name, options) {
-    const isActivities = name === 'activities';
+    if (name === 'audit' && !isAdmin()) name = 'basic';
     const basicTab = byId('classTabBasic');
     const activitiesTab = byId('classTabActivities');
+    const auditTab = byId('classTabAudit');
     const basicPanel = byId('classPanelBasic');
     const activitiesPanel = byId('classPanelActivities');
+    const auditPanel = byId('classPanelAudit');
     if (!basicTab || !activitiesTab || !basicPanel || !activitiesPanel) return;
 
-    basicTab.classList.toggle('is-active', !isActivities);
-    activitiesTab.classList.toggle('is-active', isActivities);
-    basicTab.setAttribute('aria-selected', String(!isActivities));
-    activitiesTab.setAttribute('aria-selected', String(isActivities));
-    basicTab.tabIndex = isActivities ? -1 : 0;
-    activitiesTab.tabIndex = isActivities ? 0 : -1;
-    basicPanel.hidden = isActivities;
-    activitiesPanel.hidden = !isActivities;
+    const tabs = { basic: basicTab, activities: activitiesTab, audit: auditTab };
+    const panels = { basic: basicPanel, activities: activitiesPanel, audit: auditPanel };
+    if (!tabs[name] || !panels[name]) name = 'basic';
+
+    Object.keys(tabs).forEach((key) => {
+      const tab = tabs[key];
+      const panel = panels[key];
+      if (!tab || !panel) return;
+      const active = key === name;
+      tab.classList.toggle('is-active', active);
+      tab.setAttribute('aria-selected', String(active));
+      tab.tabIndex = active ? 0 : -1;
+      panel.hidden = !active;
+    });
 
     if (!options || !options.keepStatus) setStatus('');
 
-    if (isActivities && !activitiesLoaded) {
+    if (name === 'activities' && !activitiesLoaded) {
       refreshActivities();
+    } else if (name === 'audit' && !auditLoaded) {
+      refreshAudit();
     }
   }
 
@@ -15608,6 +15937,7 @@ function friendlyRemoteError(error) {
     applyRole();
     infoLoaded = false;
     activitiesLoaded = false;
+    auditLoaded = false;
     dom.modal.hidden = false;
     dom.modal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('is-locked');
@@ -15675,19 +16005,28 @@ function friendlyRemoteError(error) {
 
     const basicTab = byId('classTabBasic');
     const activitiesTab = byId('classTabActivities');
-    [basicTab, activitiesTab].forEach((tab) => {
+    const auditTab = byId('classTabAudit');
+    [basicTab, activitiesTab, auditTab].forEach((tab) => {
       if (!tab) return;
       tab.addEventListener('click', () => activateTab(tab.dataset.classTab));
       tab.addEventListener('keydown', (event) => {
         if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
         event.preventDefault();
-        const next = tab.dataset.classTab === 'basic' ? activitiesTab : basicTab;
+        const tabs = [basicTab, activitiesTab, auditTab].filter((item) => item && !item.hidden);
+        if (!tabs.length) return;
+        const current = tabs.indexOf(tab);
+        const step = event.key === 'ArrowRight' ? 1 : -1;
+        const next = tabs[(current + step + tabs.length) % tabs.length];
         if (next) {
           activateTab(next.dataset.classTab);
           next.focus();
         }
       });
     });
+
+    if (dom.auditRefresh) {
+      dom.auditRefresh.addEventListener('click', refreshAudit);
+    }
 
     if (dom.saveBtn) dom.saveBtn.addEventListener('click', saveInfoFromForm);
 
@@ -15739,6 +16078,12 @@ function friendlyRemoteError(error) {
     dom.addBtn = byId('classActivityAddBtn');
     dom.activityList = byId('classActivityList');
     dom.activityEmpty = byId('classActivityEmpty');
+    dom.tabs = document.querySelector('.class-overview-tabs');
+    dom.auditTab = byId('classTabAudit');
+    dom.auditPanel = byId('classPanelAudit');
+    dom.auditList = byId('classAuditList');
+    dom.auditEmpty = byId('classAuditEmpty');
+    dom.auditRefresh = byId('classAuditRefresh');
   }
 
   cacheDom();
