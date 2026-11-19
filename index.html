@@ -8654,6 +8654,21 @@ html.intro-disabled .totem-background::after {
   .activity-image-upload { right: 6px; bottom: 6px; }
 }
 
+/* 旧版个人留言置顶显示 */
+.member-message-item.is-legacy {
+  border-color: rgba(190, 160, 106, 0.42);
+  background: rgba(190, 160, 106, 0.045);
+}
+.member-message-item.is-legacy .member-message-item-head span {
+  color: #c8a96f;
+}
+.member-message-legacy-note {
+  margin: 10px 0 0;
+  color: #8f7c5e;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
 </style>
 <script>
 /* Supabase JS UMD v2 - inlined to avoid CDN blocking */
@@ -16724,6 +16739,18 @@ function friendlyRemoteError(error) {
       return String(row.member_id) === key;
     }));
   }
+  function legacyEntry(member) {
+    var text = String(member && member.message || '').replace(/\s+/g, ' ').trim();
+    if (!text) return null;
+    return {
+      id: 'legacy-' + memberIdOf(member),
+      member_id: memberIdOf(member),
+      text: text,
+      image_url: '',
+      created_at: member.createdAt || '',
+      legacy: true
+    };
+  }
   function safeUrl(value) {
     try {
       var u = new URL(String(value), location.href);
@@ -16814,6 +16841,7 @@ function friendlyRemoteError(error) {
       var member = findMember(card.dataset.memberId);
       if (!member) return;
       var msgs = messagesOf(member);
+      var legacy = legacyEntry(member);
       var latest = msgs.length ? msgs[msgs.length - 1] : null;
       var message = $('.member-message', card);
       if (!message) return;
@@ -16826,7 +16854,8 @@ function friendlyRemoteError(error) {
         message.classList.remove('has-entries');
       }
       var button = $('.member-message-entry', card);
-      var show = canEdit(member) || msgs.length > 0;
+      var total = msgs.length + (legacy ? 1 : 0);
+      var show = canEdit(member) || total > 0;
       if (!button) {
         if (!show) return;
         button = document.createElement('button');
@@ -16836,10 +16865,10 @@ function friendlyRemoteError(error) {
       }
       button.hidden = !show;
       if (!show) return;
-      var label = msgs.length ? '留言 ' + msgs.length : '写留言';
+      var label = total ? '留言 ' + total : '写留言';
       if (button.textContent !== label) button.textContent = label;
       button.dataset.memberMessages = member.id;
-      button.setAttribute('aria-label', (msgs.length ? '查看' : '新增') + ' ' + member.name + ' 的留言');
+      button.setAttribute('aria-label', (total ? '查看' : '新增') + ' ' + member.name + ' 的留言');
     });
   }
 
@@ -16934,22 +16963,26 @@ function friendlyRemoteError(error) {
     if (!state.member) return;
     var member = state.member;
     var msgs = messagesOf(member);
+    var legacy = legacyEntry(member);
+    var display = legacy ? [legacy].concat(msgs) : msgs;
     var can = canEdit(member);
     byId('memberMessagesOwner').textContent = member.name + ' · ' + (member.province || '') + (can ? ' · 可编辑' : ' · 只读');
     byId('memberMessagesNote').textContent = can
-      ? '最多保留 6 条留言；卡片只显示最新一条，点击“留言”查看全部。图片会自动压缩。'
+      ? '个人留言会保留为第一条；之后最多再保留 6 条。卡片只显示最新一条，图片会自动压缩。'
       : '这里保存了这位同学的多条留言，卡片只显示最新一条。';
-    byId('memberMessagesEmpty').hidden = msgs.length > 0;
+    byId('memberMessagesEmpty').hidden = display.length > 0;
     byId('memberMessagesEmpty').textContent = can ? '还没有留言，写下第一条吧。' : '这位同学还没有留言。';
     var list = byId('memberMessagesList');
-    list.innerHTML = msgs.map(function (m) {
+    list.innerHTML = display.map(function (m) {
       var text = String(m.text || '');
-      var image = safeUrl(m.image_url);
-      return '<article class="member-message-item" data-message-id="' + esc(m.id) + '">' +
-        '<div class="member-message-item-head"><span>同窗留言</span><time>' + esc(formatTime(m.created_at)) + '</time></div>' +
+      var image = m.legacy ? '' : safeUrl(m.image_url);
+      var isLegacy = !!m.legacy;
+      return '<article class="member-message-item' + (isLegacy ? ' is-legacy' : '') + '" data-message-id="' + esc(m.id) + '">' +
+        '<div class="member-message-item-head"><span>' + (isLegacy ? '个人留言' : '同窗留言') + '</span><time>' + esc(formatTime(m.created_at)) + '</time></div>' +
         (text ? '<p class="member-message-item-text">' + esc(text) + '</p>' : '') +
         (image ? '<a href="' + esc(image) + '" target="_blank" rel="noopener noreferrer"><img class="member-message-item-image" src="' + esc(image) + '" alt="" loading="lazy" referrerpolicy="no-referrer"></a>' : '') +
-        (can ? '<div class="member-message-item-actions"><button type="button" data-message-action="edit">编辑</button><button type="button" data-message-action="delete">删除</button></div>' : '') +
+        (can && !isLegacy ? '<div class="member-message-item-actions"><button type="button" data-message-action="edit">编辑</button><button type="button" data-message-action="delete">删除</button></div>' : '') +
+        (isLegacy && can ? '<p class="member-message-legacy-note">个人留言可在“编辑同窗资料”中修改。</p>' : '') +
         '</article>';
     }).join('');
     Array.prototype.forEach.call(list.querySelectorAll('.member-message-item-image'), function (img) {
@@ -16966,9 +16999,6 @@ function friendlyRemoteError(error) {
     });
     var add = byId('memberMessageAdd');
     add.hidden = !can || msgs.length >= MAX_MESSAGES;
-    if (msgs.length >= MAX_MESSAGES) {
-      add.hidden = true;
-    }
     if (!can) byId('memberMessageFormWrap').hidden = true;
   }
 
