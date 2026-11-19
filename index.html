@@ -8391,6 +8391,269 @@ html.intro-disabled .totem-aura {
 html.intro-disabled .totem-background::after {
   animation: none !important;
 }
+
+/* MEMBER MESSAGES + IMAGE UPLOAD */
+
+/* ===== 同窗多條留言 + 活動圖片（獨立模組） ===== */
+.member-message {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.member-message.has-entries {
+  color: #d9c49b;
+}
+.member-message-entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 5px 0 0;
+  padding: 2px 8px;
+  border: 1px solid rgba(185, 154, 101, 0.32);
+  border-radius: 999px;
+  background: rgba(185, 154, 101, 0.06);
+  color: #cbb388;
+  font-family: var(--font-serif);
+  font-size: 9px;
+  letter-spacing: .08em;
+  line-height: 1.6;
+  cursor: pointer;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.member-message-entry:hover,
+.member-message-entry:focus-visible {
+  border-color: rgba(226, 195, 139, 0.6);
+  background: rgba(226, 195, 139, 0.12);
+  color: #f0d9ab;
+}
+.member-message-entry::before {
+  content: "✦";
+  font-size: 8px;
+  color: #b79b6b;
+}
+.member-message-entry[hidden] { display: none !important; }
+
+.member-messages-modal[hidden] { display: none !important; }
+.member-messages-card {
+  width: min(720px, calc(100vw - 30px));
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.member-messages-card .modal-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding-top: 14px;
+}
+.member-messages-owner {
+  color: #bca77f;
+  font-family: var(--font-serif);
+  font-size: 10px;
+  letter-spacing: .08em;
+}
+.member-messages-note {
+  margin: 0 0 10px;
+  color: #98876b;
+  font-size: 9px;
+  line-height: 1.7;
+}
+.member-messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 40vh;
+  overflow-y: auto;
+  padding: 2px 4px 2px 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(185, 154, 101, .35) transparent;
+}
+.member-message-item {
+  border: 1px solid rgba(185, 154, 101, 0.24);
+  background: rgba(255, 255, 255, 0.018);
+  padding: 10px 12px;
+  border-radius: 3px;
+}
+.member-message-item-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+  color: #8e7c61;
+  font-size: 9px;
+  line-height: 1.4;
+}
+.member-message-item-text {
+  margin: 0;
+  color: #d8c7a8;
+  font-family: var(--font-serif);
+  font-size: 12px;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.member-message-item-image {
+  display: block;
+  max-width: min(240px, 100%);
+  max-height: 180px;
+  margin-top: 7px;
+  border: 1px solid rgba(185, 154, 101, 0.25);
+  object-fit: cover;
+}
+.member-message-item-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 7px;
+}
+.member-message-item-actions button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #ac9369;
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: .06em;
+  cursor: pointer;
+}
+.member-message-item-actions button:hover { color: #efd8ab; }
+.member-message-item-actions button.is-confirming { color: #df9b83; }
+.member-messages-empty {
+  margin: 10px 0 12px;
+  padding: 18px 12px;
+  border: 1px dashed rgba(185, 154, 101, 0.2);
+  color: #8e7c61;
+  text-align: center;
+  font-family: var(--font-serif);
+  font-size: 11px;
+  line-height: 1.8;
+}
+.member-message-add {
+  align-self: flex-start;
+  margin: 10px 0 0;
+  padding: 5px 12px;
+  border: 1px solid rgba(185, 154, 101, 0.35);
+  background: transparent;
+  color: #d2b98c;
+  font-family: var(--font-serif);
+  font-size: 10px;
+  letter-spacing: .08em;
+  cursor: pointer;
+}
+.member-message-add:hover { border-color: rgba(226, 195, 139, .65); color: #f1d9ac; }
+.member-message-form-wrap {
+  margin-top: 10px;
+  border-top: 1px solid rgba(185, 154, 101, 0.18);
+  padding-top: 10px;
+}
+.member-message-form-wrap[hidden] { display: none !important; }
+.member-message-form {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.member-message-form label {
+  color: #b9a27b;
+  font-family: var(--font-serif);
+  font-size: 9px;
+  letter-spacing: .12em;
+}
+.member-message-form textarea {
+  min-height: 72px;
+  max-height: 140px;
+  resize: vertical;
+  font-family: var(--font-serif);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.member-message-form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.member-message-counter { color: #857356; font-size: 9px; }
+.member-message-file {
+  color: #978361;
+  font-size: 9px;
+  max-width: 55%;
+}
+.member-message-file::-webkit-file-upload-button {
+  margin-right: 8px;
+  padding: 3px 8px;
+  border: 1px solid rgba(185, 154, 101, .35);
+  background: transparent;
+  color: #cdb58a;
+  font: inherit;
+  cursor: pointer;
+}
+.member-message-preview {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.member-message-preview img {
+  max-width: 120px;
+  max-height: 86px;
+  border: 1px solid rgba(185, 154, 101, .25);
+  object-fit: cover;
+}
+.member-message-preview button {
+  padding: 1px 6px;
+  border: 1px solid rgba(185, 154, 101, .25);
+  background: transparent;
+  color: #b19a74;
+  font-size: 9px;
+  cursor: pointer;
+}
+.member-message-status {
+  min-height: 16px;
+  margin: 0;
+  color: #9d8766;
+  font-size: 9px;
+  line-height: 1.6;
+}
+.member-message-status.is-error { color: #dd997f; }
+.member-message-status.is-ok { color: #b8c79b; }
+.member-message-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.member-message-form-actions button { min-width: 96px; }
+
+/* 活動圖片上傳 */
+.class-activity-figure { position: relative; }
+.activity-image-upload {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  padding: 4px 8px;
+  border: 1px solid rgba(230, 199, 143, .4);
+  background: rgba(16, 12, 9, .78);
+  color: #ddc393;
+  font-family: var(--font-serif);
+  font-size: 9px;
+  letter-spacing: .08em;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+}
+.activity-image-upload:hover { border-color: rgba(230, 199, 143, .8); color: #f4dfb8; }
+.activity-image-upload[disabled] { opacity: .5; cursor: wait; }
+
+@media (max-width: 760px) {
+  .member-messages-card {
+    width: calc(100vw - 20px);
+    max-height: 90vh;
+  }
+  .member-messages-list { max-height: 38vh; }
+  .member-message-item-image { max-height: 150px; }
+  .activity-image-upload { right: 6px; bottom: 6px; }
+}
+
 </style>
 <script>
 /* Supabase JS UMD v2 - inlined to avoid CDN blocking */
@@ -16378,6 +16641,717 @@ function friendlyRemoteError(error) {
   }
   if (document.readyState === 'complete') setTimeout(boot, 800);
   else window.addEventListener('load', function () { setTimeout(boot, 800); });
+})();
+
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  var SUPABASE_URL = 'https://hvdfbpufjevwlattqttn.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_tPnlZdhrpeg4TQ1lsdjp3A_WDep2zhC';
+  var AUTH_KEY = 'hongtong-bighuai-class-v1:auth';
+  var TOKEN_KEY = 'hongtong-bighuai-class-v1:auth-token';
+  var MEMBERS_KEY = 'hongtong-bighuai-class-v1:members';
+  var CACHE_KEY = 'hongtong-bighuai-class-v1:messages';
+  var OVERVIEW_KEY = 'hongtong-bighuai-class-v1:class-overview';
+  var MAX_MESSAGES = 6;
+  var MAX_TEXT = 240;
+
+  var state = {
+    messages: [],
+    activityImages: {},
+    member: null,
+    editId: null,
+    currentImage: '',
+    pendingFile: null,
+    previewUrl: '',
+    busy: false,
+    modal: null,
+    trigger: null,
+    deleteTimer: null,
+    remoteLoaded: false
+  };
+
+  function $(selector, root) { return (root || document).querySelector(selector); }
+  function $$(selector, root) { return Array.prototype.slice.call((root || document).querySelectorAll(selector)); }
+  function byId(id) { return document.getElementById(id); }
+  function uid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'local-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9);
+  }
+  function esc(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function readJSON(key, fallback) {
+    try { var raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch (e) { return fallback; }
+  }
+  function writeJSON(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* storage full or disabled */ }
+  }
+  function auth() { var a = readJSON(AUTH_KEY, null); return a && typeof a === 'object' ? a : null; }
+  function isAdmin() { var a = auth(); return !!(a && a.role === 'admin'); }
+  function token() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
+  function readMembers() {
+    var value = readJSON(MEMBERS_KEY, []);
+    return Array.isArray(value) ? value : [];
+  }
+  function findMember(id) {
+    return readMembers().find(function (m) { return String(m.id) === String(id); }) || null;
+  }
+  function ownerOf(member) {
+    if (!member) return '';
+    return String(member.studentId || member.student_id || '').trim();
+  }
+  function memberIdOf(member) {
+    return member && member.id ? String(member.id) : '';
+  }
+  function memberForStudent(studentId) {
+    var owner = String(studentId || '').trim();
+    if (!owner) return null;
+    return readMembers().find(function (m) { return ownerOf(m) === owner; }) || null;
+  }
+  function normalizeMessage(row) {
+    if (!row || typeof row !== 'object') return null;
+    if (!row.member_id && row.student_id) {
+      var member = memberForStudent(row.student_id);
+      if (member) row.member_id = member.id;
+    }
+    return row;
+  }
+  function canEdit(member) {
+    if (isAdmin()) return true;
+    var a = auth();
+    if (!a || !a.studentId) return false;
+    return !!ownerOf(member) && ownerOf(member) === String(a.studentId);
+  }
+  function sortMessages(rows) {
+    return rows.slice().sort(function (a, b) {
+      return (Date.parse(a.created_at) || 0) - (Date.parse(b.created_at) || 0);
+    });
+  }
+  function messagesOf(member) {
+    var key = memberIdOf(member);
+    if (!key) return [];
+    return sortMessages(state.messages.filter(function (m) {
+      var row = normalizeMessage(m);
+      return String(row.member_id) === key;
+    }));
+  }
+  function safeUrl(value) {
+    try {
+      var u = new URL(String(value), location.href);
+      return (u.protocol === 'https:' || u.protocol === 'http:') ? u.href : '';
+    } catch (e) { return ''; }
+  }
+  function formatTime(value) {
+    var date = new Date(value);
+    if (isNaN(date.getTime())) return '';
+    var pad = function (n) { return n < 10 ? '0' + n : String(n); };
+    return date.getFullYear() + '/' + pad(date.getMonth() + 1) + '/' + pad(date.getDate()) + ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+  }
+  function readOverviewCache() {
+    var c = readJSON(OVERVIEW_KEY, {});
+    return c && typeof c === 'object' ? c : {};
+  }
+  function writeOverviewCache(patch) {
+    var c = readOverviewCache();
+    Object.keys(patch || {}).forEach(function (k) { c[k] = patch[k]; });
+    writeJSON(OVERVIEW_KEY, c);
+  }
+
+  async function rpc(name, payload, timeout) {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, timeout || 14000);
+    try {
+      var res = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + name, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload || {}),
+        signal: ctrl.signal
+      });
+      var text = await res.text();
+      var data = null;
+      try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
+      if (!res.ok) {
+        var msg = (data && (data.message || data.error || data.details || data.hint)) || ('HTTP ' + res.status);
+        var error = new Error(msg);
+        error.status = res.status;
+        throw error;
+      }
+      return data;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  function loadCache() {
+    var rows = readJSON(CACHE_KEY, []);
+    if (!Array.isArray(rows)) rows = [];
+    state.messages = rows.map(normalizeMessage).filter(function (r) { return r && r.id && r.member_id; });
+    var ov = readOverviewCache();
+    var map = {};
+    (Array.isArray(ov.activities) ? ov.activities : []).forEach(function (a) {
+      if (a && a.id && a.image_url) map[a.id] = a.image_url;
+    });
+    state.activityImages = map;
+  }
+  function saveCache() { writeJSON(CACHE_KEY, state.messages); }
+
+  async function pullRemoteMessages() {
+    try {
+      var res = await rpc('class_messages_list', {});
+      if (!res || res.ok === false) throw new Error((res && res.error) || '无法读取留言。');
+      var rows = res.data;
+      if (!Array.isArray(rows)) return;
+      if (rows.length > 0 || state.messages.length === 0) {
+        state.messages = rows.map(normalizeMessage).filter(function (r) { return r && r.id && r.member_id; });
+        saveCache();
+        decorateCards();
+      }
+      state.remoteLoaded = true;
+    } catch (e) {
+      // Local cache remains the source of truth when the remote is unavailable.
+    }
+  }
+
+  function messageCountFor(member) { return messagesOf(member).length; }
+
+  function decorateCards() {
+    var grid = byId('memberGrid');
+    if (!grid) return;
+    $$('.member-card[data-member-id]', grid).forEach(function (card) {
+      var member = findMember(card.dataset.memberId);
+      if (!member) return;
+      var msgs = messagesOf(member);
+      var latest = msgs.length ? msgs[msgs.length - 1] : null;
+      var message = $('.member-message', card);
+      if (!message) return;
+      if (latest) {
+        message.textContent = latest.text || '图片留言';
+        message.classList.add('has-entries');
+      } else {
+        message.textContent = member.message || '尚未留下寄语';
+        message.classList.toggle('is-empty', !member.message);
+        message.classList.remove('has-entries');
+      }
+      var button = $('.member-message-entry', card);
+      var show = canEdit(member) || msgs.length > 0;
+      if (!button) {
+        if (!show) return;
+        button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'member-message-entry';
+        message.insertAdjacentElement('afterend', button);
+      }
+      button.hidden = !show;
+      if (!show) return;
+      var label = msgs.length ? '留言 ' + msgs.length : '写留言';
+      if (button.textContent !== label) button.textContent = label;
+      button.dataset.memberMessages = member.id;
+      button.setAttribute('aria-label', (msgs.length ? '查看' : '新增') + ' ' + member.name + ' 的留言');
+    });
+  }
+
+  function scheduleDecorate() {
+    if (scheduleDecorate.pending) return;
+    scheduleDecorate.pending = true;
+    requestAnimationFrame(function () {
+      scheduleDecorate.pending = false;
+      decorateCards();
+    });
+  }
+
+  function ensureModal() {
+    if (state.modal) return state.modal;
+    var layer = document.createElement('div');
+    layer.className = 'modal-layer member-messages-modal';
+    layer.id = 'memberMessagesModal';
+    layer.hidden = true;
+    layer.innerHTML = '' +
+      '<div class="modal-backdrop" data-member-messages-close></div>' +
+      '<div class="modal-card member-messages-card" role="dialog" aria-modal="true" aria-labelledby="memberMessagesTitle">' +
+        '<div class="modal-head">' +
+          '<div><p class="modal-kicker">同窗留言 · MESSAGE BOARD</p><h2 id="memberMessagesTitle">留言</h2></div>' +
+          '<button class="modal-close" type="button" data-member-messages-close aria-label="关闭留言">&times;</button>' +
+        '</div>' +
+        '<div class="modal-body">' +
+          '<p class="member-messages-owner" id="memberMessagesOwner"></p>' +
+          '<p class="member-messages-note" id="memberMessagesNote">每位同学最多保留 6 条留言；卡片只显示最新一条，点击查看全部。</p>' +
+          '<div class="member-messages-list" id="memberMessagesList"></div>' +
+          '<div class="member-messages-empty" id="memberMessagesEmpty" hidden>还没有留言。</div>' +
+          '<button class="member-message-add" type="button" id="memberMessageAdd">+ 新增留言</button>' +
+          '<div class="member-message-form-wrap" id="memberMessageFormWrap" hidden>' +
+            '<form class="member-message-form" id="memberMessageForm">' +
+              '<label for="memberMessageText">留言内容</label>' +
+              '<textarea class="form-control" id="memberMessageText" maxlength="240" placeholder="写下此刻想留下的话……"></textarea>' +
+              '<div class="member-message-form-row"><span class="member-message-counter" id="memberMessageCounter">0 / 240</span><input class="member-message-file" id="memberMessageFile" type="file" accept="image/*"></div>' +
+              '<div class="member-message-preview" id="memberMessagePreview" hidden><img id="memberMessagePreviewImg" alt="留言图片预览"><button type="button" id="memberMessageRemoveImage">移除图片</button></div>' +
+              '<p class="member-message-status" id="memberMessageStatus" aria-live="polite"></p>' +
+              '<div class="member-message-form-actions"><button class="btn" type="button" id="memberMessageCancel">取消</button><button class="btn btn--gold" type="submit" id="memberMessageSave">发布留言</button></div>' +
+            '</form>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(layer);
+    state.modal = layer;
+
+    layer.addEventListener('click', function (event) {
+      if (event.target.closest('[data-member-messages-close]')) closeMessages();
+    });
+    byId('memberMessageCancel').addEventListener('click', closeComposer);
+    byId('memberMessageAdd').addEventListener('click', function () { openComposer(null); });
+    byId('memberMessageFile').addEventListener('change', handleFilePick);
+    byId('memberMessageRemoveImage').addEventListener('click', clearPickedImage);
+    byId('memberMessageText').addEventListener('input', updateCounter);
+    byId('memberMessageForm').addEventListener('submit', saveMessage);
+    byId('memberMessagesList').addEventListener('click', handleListClick);
+    layer.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') { event.preventDefault(); closeMessages(); }
+    });
+    return layer;
+  }
+
+  function openMessages(memberId, trigger) {
+    var member = findMember(memberId);
+    if (!member) return;
+    ensureModal();
+    state.member = member;
+    state.trigger = trigger || null;
+    state.editId = null;
+    closeComposer();
+    renderMessages();
+    state.modal.hidden = false;
+    state.modal.removeAttribute('aria-hidden');
+    document.body.classList.add('is-locked');
+    window.requestAnimationFrame(function () {
+      var close = $('.modal-close', state.modal);
+      if (close) close.focus();
+    });
+  }
+
+  function closeMessages() {
+    if (!state.modal || state.modal.hidden) return;
+    state.modal.hidden = true;
+    state.modal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('is-locked');
+    state.member = null;
+    state.editId = null;
+    if (state.trigger && document.body.contains(state.trigger)) state.trigger.focus();
+  }
+
+  function renderMessages() {
+    if (!state.member) return;
+    var member = state.member;
+    var msgs = messagesOf(member);
+    var can = canEdit(member);
+    byId('memberMessagesOwner').textContent = member.name + ' · ' + (member.province || '') + (can ? ' · 可编辑' : ' · 只读');
+    byId('memberMessagesNote').textContent = can
+      ? '最多保留 6 条留言；卡片只显示最新一条，点击“留言”查看全部。图片会自动压缩。'
+      : '这里保存了这位同学的多条留言，卡片只显示最新一条。';
+    byId('memberMessagesEmpty').hidden = msgs.length > 0;
+    byId('memberMessagesEmpty').textContent = can ? '还没有留言，写下第一条吧。' : '这位同学还没有留言。';
+    var list = byId('memberMessagesList');
+    list.innerHTML = msgs.map(function (m) {
+      var text = String(m.text || '');
+      var image = safeUrl(m.image_url);
+      return '<article class="member-message-item" data-message-id="' + esc(m.id) + '">' +
+        '<div class="member-message-item-head"><span>同窗留言</span><time>' + esc(formatTime(m.created_at)) + '</time></div>' +
+        (text ? '<p class="member-message-item-text">' + esc(text) + '</p>' : '') +
+        (image ? '<a href="' + esc(image) + '" target="_blank" rel="noopener noreferrer"><img class="member-message-item-image" src="' + esc(image) + '" alt="留言图片" loading="lazy" referrerpolicy="no-referrer"></a>' : '') +
+        (can ? '<div class="member-message-item-actions"><button type="button" data-message-action="edit">编辑</button><button type="button" data-message-action="delete">删除</button></div>' : '') +
+        '</article>';
+    }).join('');
+    var add = byId('memberMessageAdd');
+    add.hidden = !can || msgs.length >= MAX_MESSAGES;
+    if (msgs.length >= MAX_MESSAGES) {
+      add.hidden = true;
+    }
+    if (!can) byId('memberMessageFormWrap').hidden = true;
+  }
+
+  function handleListClick(event) {
+    var button = event.target.closest('[data-message-action]');
+    if (!button || !state.member) return;
+    var item = button.closest('[data-message-id]');
+    if (!item) return;
+    var id = item.dataset.messageId;
+    var entry = state.messages.find(function (m) { return String(m.id) === String(id); });
+    if (!entry) return;
+    if (button.dataset.messageAction === 'edit') {
+      openComposer(entry);
+    } else if (button.dataset.messageAction === 'delete') {
+      confirmDeleteMessage(entry, button);
+    }
+  }
+
+  function openComposer(entry) {
+    if (!state.member || !canEdit(state.member)) return;
+    state.editId = entry ? entry.id : null;
+    state.currentImage = entry ? safeUrl(entry.image_url) : '';
+    state.pendingFile = null;
+    state.previewUrl = '';
+    var text = entry ? String(entry.text || '') : '';
+    byId('memberMessageText').value = text;
+    byId('memberMessageFile').value = '';
+    byId('memberMessageStatus').textContent = '';
+    byId('memberMessageStatus').className = 'member-message-status';
+    byId('memberMessageFormWrap').hidden = false;
+    byId('memberMessageAdd').hidden = true;
+    byId('memberMessagePreview').hidden = !state.currentImage;
+    byId('memberMessagePreviewImg').src = state.currentImage;
+    byId('memberMessageSave').textContent = entry ? '保存修改' : '发布留言';
+    updateCounter();
+    byId('memberMessageText').focus();
+  }
+
+  function closeComposer() {
+    if (!state.modal) return;
+    byId('memberMessageFormWrap').hidden = true;
+    byId('memberMessageAdd').hidden = false;
+    byId('memberMessageText').value = '';
+    byId('memberMessageFile').value = '';
+    byId('memberMessageStatus').textContent = '';
+    state.editId = null;
+    state.pendingFile = null;
+    state.currentImage = '';
+    if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = ''; }
+    var preview = byId('memberMessagePreview');
+    if (preview) preview.hidden = true;
+  }
+
+  function updateCounter() {
+    var text = byId('memberMessageText').value || '';
+    byId('memberMessageCounter').textContent = Array.from(text).length + ' / ' + MAX_TEXT;
+  }
+
+  function handleFilePick(event) {
+    var file = event.target.files && event.target.files[0];
+    if (!file) return;
+    if (!/^image\//.test(file.type)) {
+      setMessageStatus('请选择图片文件。', 'error');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setMessageStatus('图片不能超过 8MB。', 'error');
+      return;
+    }
+    if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
+    state.pendingFile = file;
+    state.previewUrl = URL.createObjectURL(file);
+    byId('memberMessagePreviewImg').src = state.previewUrl;
+    byId('memberMessagePreview').hidden = false;
+    setMessageStatus('图片会在发布时自动压缩。', '');
+  }
+
+  function clearPickedImage() {
+    state.pendingFile = null;
+    state.currentImage = '';
+    byId('memberMessageFile').value = '';
+    byId('memberMessagePreview').hidden = true;
+    byId('memberMessagePreviewImg').removeAttribute('src');
+    if (state.previewUrl) { URL.revokeObjectURL(state.previewUrl); state.previewUrl = ''; }
+  }
+
+  function setMessageStatus(text, kind) {
+    var el = byId('memberMessageStatus');
+    if (!el) return;
+    el.textContent = text || '';
+    el.className = 'member-message-status' + (kind ? ' is-' + kind : '');
+  }
+
+  async function saveMessage(event) {
+    event.preventDefault();
+    if (!state.member || !canEdit(state.member) || state.busy) return;
+    var text = Array.from(byId('memberMessageText').value.trim()).slice(0, MAX_TEXT).join('');
+    var image = state.currentImage;
+    if (!text && !image && !state.pendingFile) {
+      setMessageStatus('请写一句留言，或选择一张图片。', 'error');
+      return;
+    }
+    var msgs = messagesOf(state.member);
+    if (!state.editId && msgs.length >= MAX_MESSAGES) {
+      setMessageStatus('每位同学最多保留 6 条留言。', 'error');
+      return;
+    }
+    state.busy = true;
+    byId('memberMessageSave').disabled = true;
+    setMessageStatus('', '');
+    try {
+      if (state.pendingFile) {
+        setMessageStatus('图片压缩并上传中…', '');
+        image = await uploadImage(state.pendingFile, 'messages', memberIdOf(state.member));
+      }
+      var payload = {
+        p_token: token() || null,
+        p_member_id: memberIdOf(state.member),
+        p_text: text,
+        p_image_url: image || null,
+        p_message_id: state.editId && !String(state.editId).startsWith('local-') ? state.editId : null
+      };
+      var row = null;
+      if (payload.p_token) {
+        try {
+          var res = await rpc('class_message_save', payload);
+          if (!res || res.ok === false) throw new Error((res && res.error) || '保存留言失败。');
+          row = res.data || null;
+        } catch (remoteError) {
+          row = localMessageRow(payload, remoteError.message);
+        }
+      } else {
+        row = localMessageRow(payload, '尚未登入，已暫存本機。');
+      }
+      if (!row) throw new Error('保存留言失败。');
+      state.messages = state.messages.filter(function (m) { return String(m.id) !== String(row.id); });
+      state.messages.push(row);
+      state.messages = sortMessages(state.messages);
+      saveCache();
+      closeComposer();
+      renderMessages();
+      decorateCards();
+      setMessageStatus('', '');
+    } catch (error) {
+      setMessageStatus(error.message || '保存失败，请稍后重试。', 'error');
+    } finally {
+      state.busy = false;
+      byId('memberMessageSave').disabled = false;
+    }
+  }
+
+  function localMessageRow(payload, note) {
+    var existing = payload.p_message_id ? state.messages.find(function (m) { return String(m.id) === String(payload.p_message_id); }) : null;
+    var row = {
+      id: existing ? existing.id : 'local-' + uid(),
+      member_id: payload.p_member_id,
+      student_id: ownerOf(state.member) || null,
+      text: payload.p_text || '',
+      image_url: payload.p_image_url || '',
+      created_at: existing ? existing.created_at : new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    if (note) setMessageStatus(note, 'error');
+    return row;
+  }
+
+  function confirmDeleteMessage(entry, button) {
+    if (state.deleteTimer) { clearTimeout(state.deleteTimer); state.deleteTimer = null; }
+    if (button.dataset.confirm !== '1') {
+      button.dataset.confirm = '1';
+      button.classList.add('is-confirming');
+      button.textContent = '再次点击删除';
+      state.deleteTimer = setTimeout(function () {
+        button.dataset.confirm = '0';
+        button.classList.remove('is-confirming');
+        button.textContent = '删除';
+      }, 3000);
+      return;
+    }
+    deleteMessage(entry);
+  }
+
+  async function deleteMessage(entry) {
+    if (!state.member) return;
+    var payload = { p_token: token() || null, p_message_id: entry.id };
+    if (payload.p_token && !String(entry.id).startsWith('local-')) {
+      try {
+        var res = await rpc('class_message_delete', payload);
+        if (!res || res.ok === false) throw new Error((res && res.error) || '删除失败。');
+      } catch (e) {
+        setMessageStatus('远端删除失败，已先在本机移除。' + (e.message || ''), 'error');
+      }
+    }
+    state.messages = state.messages.filter(function (m) { return String(m.id) !== String(entry.id); });
+    saveCache();
+    renderMessages();
+    decorateCards();
+  }
+
+  async function prepareImage(file) {
+    if (!file || !/^image\//.test(file.type)) throw new Error('请选择图片文件。');
+    if (file.size > 8 * 1024 * 1024) throw new Error('图片不能超过 8MB。');
+    var bitmap;
+    try { bitmap = await createImageBitmap(file); }
+    catch (e) {
+      bitmap = await new Promise(function (resolve, reject) {
+        var img = new Image();
+        img.onload = function () { resolve(img); };
+        img.onerror = function () { reject(new Error('无法读取图片。')); };
+        img.src = URL.createObjectURL(file);
+      });
+    }
+    var width = bitmap.width || bitmap.naturalWidth;
+    var height = bitmap.height || bitmap.naturalHeight;
+    var scale = Math.min(1, 1280 / Math.max(width, height));
+    var canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0d0a07';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    if (bitmap.close) bitmap.close();
+    var dataUrl = canvas.toDataURL('image/jpeg', 0.84);
+    var base64 = dataUrl.split(',')[1] || '';
+    if (!base64) throw new Error('图片压缩失败。');
+    var binary = atob(base64);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: 'image/jpeg' });
+  }
+
+  async function uploadImage(file, folder, owner) {
+    var blob = await prepareImage(file);
+    var id = String(owner || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '');
+    var path = folder + '/' + id + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
+    var res = await fetch(SUPABASE_URL + '/storage/v1/object/class-images/' + path, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'image/jpeg',
+        'x-upsert': 'false'
+      },
+      body: blob
+    });
+    if (!res.ok) {
+      var detail = await res.text();
+      throw new Error('图片上传失败（' + res.status + '）。' + (detail || ''));
+    }
+    return SUPABASE_URL + '/storage/v1/object/public/class-images/' + path;
+  }
+
+  function setOverviewStatus(text, kind) {
+    var el = byId('classOverviewStatus');
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'class-overview-status' + (kind ? ' is-' + kind : '');
+  }
+
+  function activityImagesFromCache() {
+    var ov = readOverviewCache();
+    var map = {};
+    (Array.isArray(ov.activities) ? ov.activities : []).forEach(function (a) {
+      if (a && a.id && a.image_url) map[a.id] = a.image_url;
+    });
+    return map;
+  }
+
+  function decorateActivities() {
+    var list = byId('classActivityList');
+    if (!list) return;
+    var admin = isAdmin();
+    $$('.class-activity-card', list).forEach(function (card) {
+      var id = card.dataset.activityId;
+      var figure = $('.class-activity-figure', card);
+      if (!id || !figure) return;
+      var cached = state.activityImages[id] || activityImagesFromCache()[id];
+      if (cached && !$('.class-activity-figure img', figure)) {
+        var img = document.createElement('img');
+        img.src = cached;
+        img.alt = '活动图片';
+        img.loading = 'lazy';
+        img.referrerPolicy = 'no-referrer';
+        var placeholder = $('.class-activity-image-placeholder', figure);
+        if (placeholder) placeholder.remove();
+        figure.insertBefore(img, figure.firstChild);
+      }
+      if (!admin) return;
+      var input = $('.class-activity-image-input', figure);
+      if (!input) {
+        input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.className = 'class-activity-image-input';
+        input.hidden = true;
+        figure.appendChild(input);
+      }
+      if (!input.dataset.messagesBound) {
+        input.dataset.messagesBound = '1';
+        input.addEventListener('change', function () { handleActivityImage(input, card, figure); });
+      }
+      if (!figure.dataset.messagesButton) {
+        figure.dataset.messagesButton = '1';
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'activity-image-upload';
+        btn.textContent = '上传图片';
+        btn.addEventListener('click', function () { if (input) input.click(); });
+        figure.appendChild(btn);
+      }
+    });
+  }
+
+  async function handleActivityImage(input, card, figure) {
+    var file = input.files && input.files[0];
+    if (!file) return;
+    var id = card.dataset.activityId;
+    var t = token();
+    if (!t) { setOverviewStatus('请先以管理员身分登入。', 'error'); input.value = ''; return; }
+    var btn = $('.activity-image-upload', figure);
+    if (btn) { btn.disabled = true; btn.textContent = '上传中…'; }
+    setOverviewStatus('正在压缩并上传活动图片…', 'loading');
+    try {
+      var url = await uploadImage(file, 'activities', id);
+      var res = await rpc('class_activity_image_save', { p_token: t, p_id: id, p_image_url: url });
+      if (!res || res.ok === false) throw new Error((res && res.error) || '保存活动图片失败。');
+      state.activityImages[id] = url;
+      var old = $('img', figure);
+      if (old) old.remove();
+      var ph = $('.class-activity-image-placeholder', figure);
+      if (ph) ph.remove();
+      var img = document.createElement('img');
+      img.src = url;
+      img.alt = '活动图片';
+      img.loading = 'lazy';
+      img.referrerPolicy = 'no-referrer';
+      figure.insertBefore(img, figure.firstChild);
+      var ov = readOverviewCache();
+      if (Array.isArray(ov.activities)) {
+        ov.activities = ov.activities.map(function (a) { return a.id === id ? Object.assign({}, a, { image_url: url }) : a; });
+        writeJSON(OVERVIEW_KEY, ov);
+      }
+      setOverviewStatus('活动图片已上传。', 'ok');
+    } catch (e) {
+      setOverviewStatus('图片上传失败：' + (e.message || '请检查存储权限。'), 'error');
+    } finally {
+      input.value = '';
+      if (btn) { btn.disabled = false; btn.textContent = '更换图片'; }
+    }
+  }
+
+  function init() {
+    ensureModal();
+    loadCache();
+    decorateCards();
+    decorateActivities();
+    var grid = byId('memberGrid');
+    if (grid && window.MutationObserver) {
+      new MutationObserver(scheduleDecorate).observe(grid, { childList: true, subtree: true });
+    }
+    var activityList = byId('classActivityList');
+    if (activityList && window.MutationObserver) {
+      new MutationObserver(function () { requestAnimationFrame(decorateActivities); })
+        .observe(activityList, { childList: true, subtree: true });
+    }
+    document.addEventListener('click', function (event) {
+      var trigger = event.target.closest('[data-member-messages]');
+      if (trigger) openMessages(trigger.dataset.memberMessages, trigger);
+    });
+    pullRemoteMessages();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
 })();
 
 </script>
