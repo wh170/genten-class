@@ -10197,11 +10197,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   // 师资是与学生完全独立的第二套资料；只新增这个模块，不动原有学生资料结构。
   const TEACHER_TYPES = ['辅导员', '专业老师'];
-  const TEACHER_SEED_ROWS = [
-    { name: '李慧兰', type: '辅导员', zodiac: '龙', constellation: '天秤座', province: '山西省', remark: '班级辅导员，陪我们走过每一个晨读与晚自习。' },
-    { name: '王砚秋', type: '专业老师', zodiac: '马', constellation: '处女座', province: '山西省', remark: '专业课指导老师，总能把复杂的理论讲成清楚的路径。' },
-    { name: '陈守一', type: '专业老师', zodiac: '狗', constellation: '摩羯座', province: '青海省', remark: '实训与竞赛指导，严谨、耐心，总在关键处多留一步。' },
-  ];
+  const TEACHER_SEED_ROWS = [];
+  const VIRTUAL_SEED_TEACHER_NAMES = ['李慧兰', '王砚秋', '陈守一'];
 
   // 旧版师资资料没有生肖／星座。读取时以姓名稳定补值；示例师资沿用上方设定。
   function pickTeacherFieldFallback(list, name, salt) {
@@ -10408,32 +10405,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   // 每一条只需要 name / province / zodiac / constellation / message；
   // element（四象）会在载入时由星座自动计算，不建议手写。
   // 正式使用前，可按「清空名录」后重新录入；或直接在这里换成班级名单。
-  const SEED_ROWS = [
-    { name: '李知槐', province: '山西省', zodiac: '鼠', constellation: '天蝎座', message: '槐花落在肩上时，我总想起教室里那些寻常的午后。愿我们走远，也记得回望。' },
-    { name: '王念祖', province: '山西省', zodiac: '牛', constellation: '摩羯座', message: '根在洪洞，心在眼前。愿此间每一份认真，都在岁月里生根。' },
-    { name: '赵归鸿', province: '河南省', zodiac: '虎', constellation: '白羊座', message: '从中原到山海，愿我们都有直挂云帆的勇气，也有落叶归根的温柔。' },
-    { name: '陈望舒', province: '江苏省', zodiac: '兔', constellation: '金牛座', message: '江南的雨慢，北方的槐香远。感谢相遇，让四季都有了可以回望的方向。' },
-    { name: '周星野', province: '浙江省', zodiac: '龙', constellation: '双子座', message: '我们像散落四方的星子，因同一棵树有了共同的坐标。' },
-    { name: '吴听澜', province: '福建省', zodiac: '蛇', constellation: '巨蟹座', message: '海风把名字吹得很远，根却把我们留得很近。' },
-    { name: '郑扶光', province: '广东省', zodiac: '马', constellation: '狮子座', message: '愿我们在各自的旷野上奔跑，回首时仍是同窗少年。' },
-    { name: '孙照临', province: '山东省', zodiac: '羊', constellation: '处女座', message: '把小事做好，把日子过慢。槐荫之下，愿每一次出发都从容。' },
-    { name: '沈云舟', province: '四川省', zodiac: '猴', constellation: '天秤座', message: '山河各有风骨，少年各有远方。谢谢你们让平凡的日子有了光。' },
-    { name: '何远山', province: '云南省', zodiac: '鸡', constellation: '天蝎座', message: '彩云之南到汾水之畔，相隔千里，共享一脉槐香。' },
-    { name: '唐照月', province: '北京市', zodiac: '狗', constellation: '射手座', message: '愿我们胸有丘壑，眼存山河；走得再远，也不忘为何出发。' },
-    { name: '顾清川', province: '上海市', zodiac: '猪', constellation: '双鱼座', message: '如果在城市的人潮里走散，就循著槐香回来。' },
-    { name: '冯知夏', province: '河北省', zodiac: '鼠', constellation: '水瓶座', message: '少年不惧岁月长，槐根深处有回响。' },
-    { name: '许南乔', province: '湖南省', zodiac: '虎', constellation: '射手座', message: '愿此后每一次远行，都有故土作舟，有同窗作灯。' },
-    { name: '罗念北', province: '陕西省', zodiac: '龙', constellation: '白羊座', message: '长安月与洪洞槐，一北一南，都是我心里的故乡。' },
-    { name: '苏晚棠', province: '广西壮族自治区', zodiac: '蛇', constellation: '巨蟹座', message: '山水有相逢，愿我们的友谊不因距离褪色。' },
-    { name: '韩青釉', province: '江西省', zodiac: '马', constellation: '射手座', message: '把热爱写进日子，把故乡藏进心里，向更远的春天去。' },
-    { name: '程见微', province: '安徽省', zodiac: '羊', constellation: '金牛座', message: '感谢这一程相遇，愿我们都能把寻常烟火过成诗。' },
-    { name: '方鹤汀', province: '贵州省', zodiac: '猴', constellation: '天秤座', message: '山中云雾与北方秋色，因同窗二字而相连。' },
-    { name: '谢云归', province: '辽宁省', zodiac: '狗', constellation: '摩羯座', message: '愿我们以岁月为纸，以笃定为墨，写好各自的答案。' },
-    { name: '陆时雨', province: '重庆市', zodiac: '猪', constellation: '双鱼座', message: '山城的雾、汾河的月，都是青春留给我们的注脚。' },
-    { name: '温故', province: '甘肃省', zodiac: '牛', constellation: '处女座', message: '戈壁风大，槐荫很深。愿我们都记得被温柔照亮的时候。' },
-    { name: '江鹭', province: '湖北省', zodiac: '鸡', constellation: '水瓶座', message: '江汉水阔，洪洞根深。愿每一次奔赴都有回声。' },
-    { name: '梁月白', province: '内蒙古自治区', zodiac: '兔', constellation: '双子座', message: '草原给了远方，古槐给了归途。愿我们自由，也彼此牵挂。' },
-  ];
+  const SEED_ROWS = [];
 
   // 常用 DOM 颜色与字体，提供给 ECharts 使用（ECharts 读不到 CSS 变量）。
   const UI = {
@@ -10778,10 +10750,16 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         throw new Error('储存格式不是阵列');
       }
       let skipped = 0;
+      let removedSeeds = 0;
       const members = [];
       let needsStudentIdMigration = false;
       parsed.forEach(function (item) {
         const existingId = item && typeof item.id === 'string' && item.id ? item.id : undefined;
+        const rawStudentId = item ? normalizeStudentId(firstDefined(item, ['studentId', 'student_id', '学号', '學號'])) : '';
+        if (/^seed-\d+$/.test(String(existingId || '')) || /^LEGACY-seed-/.test(rawStudentId)) {
+          removedSeeds += 1;
+          return;
+        }
         const member = createMemberFromRaw(item, { fail: false, id: existingId });
         if (member) {
           // localStorage 中若存有 id，保留原 id；无 id 时 createMemberFromRaw 已生成。
@@ -10794,7 +10772,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
           skipped += 1;
         }
       });
-      if (needsStudentIdMigration && skipped === 0) {
+      if (removedSeeds > 0 || (needsStudentIdMigration && skipped === 0)) {
         storageSet(STORAGE_KEYS.members, JSON.stringify(members));
       }
       return {
@@ -10923,11 +10901,16 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     try {
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) throw new Error('格式不是阵列');
-      const normalized = parsed.map(createTeacherFromRaw).filter(Boolean);
-      const needsMigration = parsed.some(function (item) {
+      const virtualNames = new Set(VIRTUAL_SEED_TEACHER_NAMES);
+      const filtered = parsed.filter(function (item) {
+        return !virtualNames.has(cleanName(item && item.name));
+      });
+      const removedSeeds = parsed.length - filtered.length;
+      const normalized = filtered.map(createTeacherFromRaw).filter(Boolean);
+      const needsMigration = filtered.some(function (item) {
         return !item || !normalizeZodiac(item.zodiac) || !normalizeSign(item.constellation);
       });
-      if (needsMigration && normalized.length === parsed.length) {
+      if (removedSeeds > 0 || (needsMigration && normalized.length === filtered.length)) {
         storageSet(STORAGE_KEYS.teachers, JSON.stringify(normalized));
       }
       return normalized;
