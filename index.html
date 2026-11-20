@@ -11608,7 +11608,43 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       this.tone(base / 2, { start: now, duration: 1.6, attack: 0.02, level: 0.012, type: 'triangle', wet: 0.2 });
     }
 
-    // 2) 点击四象：轻柔风铃水波切换音
+    // 2) 与生肖卡交互：清脆的抽卡声（纸牌滑动 + 边缘轻弹）
+    // 不使用青铜钟/长残响，避免「叮」的停留感。
+    playCardDraw() {
+      if (this.muted) return;
+      const ctx = this.ensureContext();
+      if (!ctx) return;
+      const now = ctx.currentTime + 0.008;
+
+      // 牌面从牌堆抽出的短促纸声：带通中心由低到高再回收。
+      const slide = ctx.createBufferSource();
+      slide.buffer = this.noiseBuffer;
+      const slideFilter = ctx.createBiquadFilter();
+      slideFilter.type = 'bandpass';
+      slideFilter.Q.value = 1.15;
+      slideFilter.frequency.setValueAtTime(780, now);
+      slideFilter.frequency.exponentialRampToValueAtTime(5200, now + 0.075);
+      slideFilter.frequency.exponentialRampToValueAtTime(1700, now + 0.17);
+      const slideGain = ctx.createGain();
+      slideGain.gain.setValueAtTime(0.0001, now);
+      slideGain.gain.exponentialRampToValueAtTime(0.021, now + 0.014);
+      slideGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.19);
+      slide.connect(slideFilter);
+      slideFilter.connect(slideGain);
+      this.routeVoice(slideGain, 0.015);
+      slide.start(now, Math.random() * 0.42);
+      slide.stop(now + 0.22);
+
+      // 卡牌边缘脱手的一下高频脆响。
+      this.noise({ start: now + 0.058, duration: 0.032, level: 0.03, filterType: 'highpass', frequency: 2800, q: 0.7, wet: 0.01 });
+      this.tone(2480, { start: now + 0.054, duration: 0.042, attack: 0.0015, level: 0.006, type: 'triangle', wet: 0 });
+      this.tone(3700, { start: now + 0.061, duration: 0.028, attack: 0.0012, level: 0.0036, type: 'sine', wet: 0 });
+
+      // 很轻的纸牌本体低频，给手指一点触感，不拖尾。
+      this.tone(168, { start: now + 0.042, duration: 0.072, attack: 0.003, level: 0.0075, type: 'sine', wet: 0 });
+    }
+
+    // 3) 点击四象：轻柔风铃水波切换音
     playWindChime() {
       if (this.muted) return;
       const ctx = this.ensureContext();
@@ -15114,12 +15150,12 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         return;
       }
       if (canExpand) {
-        Sound.playBronzeBell();
+        Sound.playCardDraw();
         expandZodiacDeck();
         return;
       }
       if (card.disabled) return;
-      Sound.playBronzeBell();
+      Sound.playCardDraw();
       zodiacDeckExpanded = false;
       applyZodiacFilter(card.dataset.zodiac);
     });
