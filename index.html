@@ -10137,7 +10137,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
             <p class="tree-lore-kicker">古槐寄语</p>
             <p class="tree-lore-copy">明初移民，百万之众自山西洪洞集结，折槐为记，迁徙全国。六百年光阴流转，海内外两亿后裔皆认此为祖地。</p>
             <p class="tree-lore-copy">历史的车轮滚滚向前，血脉的印记却从未磨灭。</p>
-            <p class="tree-lore-copy">今日，我们虽来自五湖四海，却在这里寻到了共同的根系。二十八个省份的座标，三十六位同窗的轨迹，在大数据的星盘上交汇。</p>
+            <p class="tree-lore-copy">今日，我们虽来自五湖四海，却在这里寻到了共同的根系。<span id="treeLoreProvinceCount">0</span> 个省份的坐标，<span id="treeLoreMemberCount">0</span> 位同窗的轨迹，在大数据的星盘上交汇。</p>
             <p class="tree-lore-quote">寻根溯源，不忘来路；披星戴月，夜尽天明。</p>
           </div>
 
@@ -14308,7 +14308,22 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     return window.matchMedia('(hover: none), (pointer: coarse)').matches;
   }
 
+  function updateTreeLoreStats() {
+    const provinceNode = document.getElementById('treeLoreProvinceCount');
+    const memberNode = document.getElementById('treeLoreMemberCount');
+    if (!provinceNode && !memberNode) return;
+    const members = Array.isArray(state.members) ? state.members : [];
+    const provinces = Object.create(null);
+    members.forEach(function (member) {
+      const province = normalizeProvince((member && member.province) || '');
+      if (province) provinces[province] = true;
+    });
+    if (provinceNode) provinceNode.textContent = String(Object.keys(provinces).length);
+    if (memberNode) memberNode.textContent = String(members.length);
+  }
+
   function showTreeLore(autoHide) {
+    updateTreeLoreStats();
     if (!dom.treeLore) return;
     window.clearTimeout(treeLoreTimer);
     treeLoreTimer = 0;
