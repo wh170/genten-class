@@ -10202,6 +10202,56 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
 }
 
 </style>
+<style id="map-scope-move">
+
+/* 地图范围切换：从教师名录移到地图内，改为清晰的文字标签 */
+.map-scope-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .55rem;
+  padding: 0 3px 7px;
+}
+.map-scope-label {
+  color: #6b8073;
+  font-size: 9px;
+  letter-spacing: .13em;
+  white-space: nowrap;
+}
+.map-panel .map-scope {
+  display: inline-flex;
+  align-items: center;
+  gap: .7rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.map-panel .scope-btn {
+  padding: 2px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #4f6857;
+  font-size: .72rem;
+  letter-spacing: .04em;
+  line-height: 1.4;
+}
+.map-panel .scope-btn:hover { color: #3f654f; background: transparent; }
+.map-panel .scope-btn.is-active {
+  color: #264a35;
+  background: transparent;
+  box-shadow: none;
+  border-bottom: 1px solid #b08a4a;
+}
+@media (max-width: 760px) {
+  .map-scope-row { justify-content: space-between; padding-bottom: 6px; }
+  .map-panel .map-scope { gap: .6rem; }
+  .map-panel .scope-btn { font-size: .68rem; }
+}
+
+</style>
 </head>
 
 <body>
@@ -11036,6 +11086,15 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
             </div>
           </div>
 
+          <div class="map-scope-row">
+            <span class="map-scope-label">地图范围</span>
+<div class="map-scope" id="mapScope" role="group" aria-label="地图显示范围">
+                <button class="scope-btn" data-map-scope="students" type="button" aria-pressed="false">只看学生</button>
+                <button class="scope-btn" data-map-scope="teachers" type="button" aria-pressed="false">只看教师</button>
+                <button class="scope-btn is-active" data-map-scope="all" type="button" aria-pressed="true">全部展示</button>
+              </div>
+          </div>
+
           <div class="map-stage" id="mapStage">
             <div class="map-taiji" aria-hidden="true">
               <svg class="map-taiji-svg" viewBox="-120 -120 840 840" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -11183,11 +11242,7 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
             </div>
           </div>
           <div class="teacher-tools">
-            <div class="map-scope" id="mapScope" role="group" aria-label="地图显示范围">
-              <button class="scope-btn" data-map-scope="students" type="button" aria-pressed="false">只看学生</button>
-              <button class="scope-btn" data-map-scope="teachers" type="button" aria-pressed="false">只看教师</button>
-              <button class="scope-btn is-active" data-map-scope="all" type="button" aria-pressed="true">全部展示</button>
-            </div>
+            
             <button class="btn btn--gold teacher-self-fill" id="teacherSelfFillBtn" type="button" hidden>填写我的师资资料</button>
             <button class="teacher-edit-toggle" id="teacherEditToggle" type="button" aria-expanded="false" title="页面编辑模式预设关闭">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -14414,7 +14469,6 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
   }
 
   function setMapScope(nextScope) {
-    if (!isAdmin()) return;
     if (nextScope !== 'students' && nextScope !== 'teachers' && nextScope !== 'all') return;
     if (getMapScope() === nextScope) return;
     state.mapScope = nextScope;
@@ -14598,7 +14652,7 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
     }
     if (dom.importBtn) dom.importBtn.hidden = !admin;
     if (dom.clearAllBtn) dom.clearAllBtn.hidden = !admin;
-    if (dom.mapScope) dom.mapScope.hidden = !admin;
+    if (dom.mapScope) dom.mapScope.hidden = false;
     if (dom.teacherEditToggle) dom.teacherEditToggle.hidden = true;
     if (dom.teacherUnlock) dom.teacherUnlock.hidden = true;
     if (dom.teacherEditStatus) dom.teacherEditStatus.hidden = true;
