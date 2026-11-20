@@ -12477,13 +12477,25 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     head.appendChild(count);
     zodiacPeopleTipEl.appendChild(head);
 
-    [
-      { key: 'teacher', label: '教师' },
-      { key: 'student', label: '学生' }
-    ].forEach(function (section) {
-      const sectionPeople = people.filter(function (person) {
-        return (person.group || 'student') === section.key;
-      });
+    const sections = TEACHER_TYPES.map(function (type) {
+      return {
+        label: type,
+        people: people.filter(function (person) {
+          return person.group === 'teacher' && person.type === type;
+        })
+      };
+    });
+    const otherTeachers = people.filter(function (person) {
+      return person.group === 'teacher' && TEACHER_TYPES.indexOf(person.type) === -1;
+    });
+    if (otherTeachers.length) sections.push({ label: '教师', people: otherTeachers });
+    sections.push({
+      label: '学生',
+      people: people.filter(function (person) { return (person.group || 'student') === 'student'; })
+    });
+
+    sections.forEach(function (section) {
+      const sectionPeople = section.people;
       if (!sectionPeople.length) return;
       const sectionHead = document.createElement('div');
       sectionHead.className = 'zodiac-people-tip__section';
@@ -12565,16 +12577,27 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         cornerNode.classList.toggle('multi-sign', multiSign);
         cornerNode.classList.toggle('is-empty-sign', uniqueConstellations.length === 0);
         cornerNode._zodiacPeople = multiSign ? peopleList.map(function (member) {
+          const isTeacher = state.teachers.indexOf(member) !== -1;
           return {
             name: member.name,
             constellation: String(member.constellation || '').trim(),
-            group: state.teachers.indexOf(member) !== -1 ? 'teacher' : 'student'
+            group: isTeacher ? 'teacher' : 'student',
+            type: isTeacher ? String(member.type || '').trim() : ''
           };
         }) : null;
         if (multiSign) {
-          const teacherCount = peopleList.filter(function (member) { return state.teachers.indexOf(member) !== -1; }).length;
-          const studentCount = peopleList.length - teacherCount;
-          cornerNode.setAttribute('aria-label', '群星，教师 ' + teacherCount + ' 人、学生 ' + studentCount + ' 人：' + peopleList.map(function (member) { return member.name; }).join('、'));
+          const teacherPeople = peopleList.filter(function (member) { return state.teachers.indexOf(member) !== -1; });
+          const studentCount = peopleList.length - teacherPeople.length;
+          const typeCounts = TEACHER_TYPES.map(function (type) {
+            const count = teacherPeople.filter(function (member) { return String(member.type || '').trim() === type; }).length;
+            return count ? type + ' ' + count + ' 人' : '';
+          }).filter(Boolean);
+          const otherTeacherCount = teacherPeople.filter(function (member) {
+            return TEACHER_TYPES.indexOf(String(member.type || '').trim()) === -1;
+          }).length;
+          if (otherTeacherCount) typeCounts.push('教师 ' + otherTeacherCount + ' 人');
+          if (studentCount) typeCounts.push('学生 ' + studentCount + ' 人');
+          cornerNode.setAttribute('aria-label', '群星，' + typeCounts.join('、') + '：' + peopleList.map(function (member) { return member.name; }).join('、'));
         } else {
           cornerNode.removeAttribute('aria-label');
         }
