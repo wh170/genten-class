@@ -8669,6 +8669,153 @@ html.intro-disabled .totem-background::after {
   letter-spacing: 0.08em;
 }
 
+
+/* ==========================================================================
+   ZODIAC DRAW · 抽卡层（在地图省份选中后展开，保留原生肖网格）
+   ========================================================================== */
+.zodiac-panel { position: relative; }
+.zodiac-draw {
+  position: absolute;
+  z-index: 12;
+  inset: 50px 7px 7px;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 11px 9px;
+  overflow: hidden;
+  border: 1px solid rgba(211, 177, 111, 0.3);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(188, 146, 72, 0.1), transparent 54%),
+    linear-gradient(160deg, rgba(32, 24, 15, 0.97), rgba(10, 8, 6, 0.985));
+  box-shadow:
+    inset 0 0 44px rgba(0, 0, 0, 0.38),
+    0 16px 38px rgba(0, 0, 0, 0.42);
+  opacity: 0;
+  transform: translateY(8px) scale(0.986);
+  transition: opacity 0.3s var(--ease), transform 0.38s var(--ease-slow);
+}
+.zodiac-draw[hidden] { display: none !important; }
+.zodiac-draw.is-open { opacity: 1; transform: none; }
+.zodiac-draw::before,
+.zodiac-draw::after {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  content: "";
+  border-color: rgba(222, 190, 126, 0.42);
+  pointer-events: none;
+}
+.zodiac-draw::before { top: 5px; left: 5px; border-top: 1px solid; border-left: 1px solid; }
+.zodiac-draw::after { right: 5px; bottom: 5px; border-right: 1px solid; border-bottom: 1px solid; }
+.zodiac-panel.is-drawing .zodiac-grid { opacity: 0.08; filter: blur(2px); }
+.zodiac-draw-top { display: flex; flex: none; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.zodiac-draw-kicker { color: var(--faint); font-size: 7px; letter-spacing: 0.2em; line-height: 1.5; }
+.zodiac-draw-title { margin-top: 2px; color: var(--ivory); font-family: var(--font-serif); font-size: 15px; font-weight: 500; letter-spacing: 0.1em; }
+.zodiac-draw-meta { margin-top: 3px; color: var(--muted); font-size: 8px; letter-spacing: 0.08em; }
+.zodiac-draw-close {
+  display: grid;
+  flex: none;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(204, 173, 111, 0.3);
+  border-radius: 50%;
+  color: rgba(235, 215, 175, 0.78);
+  background: rgba(20, 15, 10, 0.5);
+  cursor: pointer;
+  font: 16px/1 var(--font-serif);
+  transition: border-color 0.25s, color 0.25s, background 0.25s;
+}
+.zodiac-draw-close:hover { border-color: rgba(234, 205, 145, 0.7); color: var(--ivory); background: rgba(55, 40, 23, 0.55); }
+.zodiac-draw-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin: 5px -2px 2px;
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+.zodiac-draw-stage .zodiac-draw-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 96px;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  aspect-ratio: 0.72;
+  opacity: 0;
+  z-index: var(--z, 1);
+  transform: translate(-50%, -50%) translate3d(0, 130px, -80px) rotateY(32deg) scale(0.58);
+  transition:
+    transform 0.72s cubic-bezier(0.18, 0.8, 0.22, 1),
+    opacity 0.42s var(--ease),
+    border-color 0.3s,
+    box-shadow 0.3s;
+  transition-delay: calc(var(--i, 0) * 55ms);
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+.zodiac-draw.is-open .zodiac-draw-stage .zodiac-draw-card {
+  opacity: 1;
+  transform: translate(-50%, -50%) translate3d(var(--x, 0), var(--y, 0), var(--tz, 0)) rotate(var(--r, 0)) rotateY(var(--ry, 0)) scale(1);
+}
+.zodiac-draw-stage .zodiac-draw-card:hover:not(:disabled) {
+  z-index: 30;
+  border-color: rgba(238, 209, 148, 0.82);
+  box-shadow:
+    inset 0 0 32px rgba(196, 150, 73, 0.13),
+    0 14px 28px rgba(0, 0, 0, 0.45),
+    0 0 26px rgba(205, 162, 86, 0.13);
+  transform: translate(-50%, -50%) translate3d(var(--x, 0), calc(var(--y, 0) - 6px), var(--tz, 0)) rotate(var(--r, 0)) rotateY(var(--ry, 0)) scale(1.035);
+}
+.zodiac-draw-stage .zodiac-draw-card:focus-visible { outline: 1px solid var(--gold-300); outline-offset: 2px; }
+.zodiac-draw-hint { flex: none; margin-top: 4px; color: rgba(177, 151, 109, 0.62); font-size: 7px; letter-spacing: 0.08em; text-align: center; }
+.zodiac-draw-stage::before { z-index: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 230px;
+  height: 230px;
+  content: "";
+  border: 1px solid rgba(198, 158, 88, 0.13);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(188, 145, 67, 0.12), transparent 67%);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.zodiac-draw-stage::after {
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  left: 50%;
+  width: 132px;
+  height: 184px;
+  content: "";
+  border: 1px solid rgba(195, 157, 91, 0.24);
+  border-radius: 2px;
+  background:
+    linear-gradient(160deg, rgba(47, 34, 20, 0.28), rgba(12, 9, 6, 0.4));
+  box-shadow:
+    0 0 0 5px rgba(16, 12, 8, 0.22),
+    0 0 0 10px rgba(16, 12, 8, 0.12),
+    0 -12px 30px rgba(0, 0, 0, 0.18);
+  transform: translate(-50%, -50%) rotate(-7deg);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.zodiac-draw-stage .zodiac-draw-card { z-index: 2; border-color: rgba(218, 182, 113, 0.38); background: linear-gradient(160deg, rgba(58, 42, 25, 0.82), rgba(14, 10, 7, 0.98)); filter: brightness(1.08) saturate(1.05); }
+.zodiac-draw-stage .zodiac-draw-card .zodiac-glyph { color: rgba(249, 229, 186, 0.94); text-shadow: 0 0 18px rgba(214, 170, 92, 0.22), 0 2px 12px rgba(0, 0, 0, 0.5); }
+.zodiac-draw-stage .zodiac-draw-card .zodiac-name strong,
+.zodiac-draw-stage .zodiac-draw-card .zodiac-total { color: rgba(233, 211, 172, 0.9); }
+.zodiac-draw-stage .zodiac-draw-card.has-art .zodiac-art { opacity: 0.56; }
+@media (max-width: 760px) {
+  .zodiac-draw { inset: 47px 5px 5px; padding: 10px 8px 7px; }
+  .zodiac-draw-title { font-size: 13px; }
+  .zodiac-draw-hint { font-size: 7px; }
+}
+
 </style>
 <script>
 /* Supabase JS UMD v2 - inlined to avoid CDN blocking */
@@ -9302,6 +9449,19 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
           <!-- 十二张生肖卡由 JS 生成；每张卡内嵌可替换的 img 生肖底图与大字。 -->
           <div class="zodiac-grid" id="zodiacGrid" role="group" aria-label="依生肖筛选同窗"></div>
+
+          <div class="zodiac-draw" id="zodiacDraw" hidden aria-hidden="true" aria-labelledby="zodiacDrawTitle">
+            <div class="zodiac-draw-top">
+              <div>
+                <p class="zodiac-draw-kicker">地支 · 同窗抽卡</p>
+                <h3 class="zodiac-draw-title" id="zodiacDrawTitle">抽卡</h3>
+                <p class="zodiac-draw-meta" id="zodiacDrawMeta"></p>
+              </div>
+              <button class="zodiac-draw-close" id="zodiacDrawClose" type="button" aria-label="收起抽卡">×</button>
+            </div>
+            <div class="zodiac-draw-stage" id="zodiacDrawStage" aria-live="polite"></div>
+            <p class="zodiac-draw-hint">点击卡牌 · 只留下此生肖</p>
+          </div>
 
         </section>
 
@@ -11837,6 +11997,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   function cacheDom() {
     [
       'headerMemberCount', 'headerProvinceCount', 'soundToggle', 'introSoundToggle', 'zodiacGrid', 'zodiacSideCount',
+      'zodiacDraw', 'zodiacDrawStage', 'zodiacDrawTitle', 'zodiacDrawMeta', 'zodiacDrawClose',
       'resetFiltersTop', 'elementButtons', 'treePanel', 'treeButton', 'treeRootOrigin', 'treeLore',
       'mapProvinceCount', 'mapLegendTotal', 'chinaMap', 'mapStage', 'mapState',
       'membersSection', 'filterChips', 'filteredCount', 'totalCount', 'resetFiltersBottom',
@@ -11860,6 +12021,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     });
 
     dom.zodiacPanel = $('.zodiac-panel');
+    dom.zodiacDraw = $('.zodiac-draw');
     dom.mapPanel = $('.map-panel');
     dom.soundLabel = $('.sound-label', dom.soundToggle);
     dom.mapTaijiPulse = $('.map-taiji-pulse');
@@ -12244,6 +12406,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function afterFilterChange() {
     hideStarBubble();
+    closeZodiacDraw();
     refreshAll();
   }
 
@@ -13695,6 +13858,98 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     mapRuntime.resizeObserver.observe(dom.mapStage);
   }
 
+
+  // 地图省份 → 生肖抽卡：保留原网格与筛选，只在省份选中时展开一层 3D 卡阵。
+  let zodiacDrawHideTimer = 0;
+
+  function zodiacDrawsForProvince(province) {
+    return ZODIACS.filter(function (zodiac) {
+      return state.members.some(function (member) {
+        return member.province === province && member.zodiac === zodiac.name;
+      });
+    });
+  }
+
+  function closeZodiacDraw() {
+    if (!dom.zodiacDraw) return;
+    dom.zodiacDraw.classList.remove('is-open');
+    if (dom.zodiacPanel) dom.zodiacPanel.classList.remove('is-drawing');
+    window.clearTimeout(zodiacDrawHideTimer);
+    zodiacDrawHideTimer = window.setTimeout(function () {
+      if (!dom.zodiacDraw || dom.zodiacDraw.classList.contains('is-open')) return;
+      dom.zodiacDraw.hidden = true;
+      dom.zodiacDraw.setAttribute('aria-hidden', 'true');
+    }, 320);
+  }
+
+  function openZodiacDraw(province) {
+    if (!province || !dom.zodiacDraw || !dom.zodiacDrawStage) return;
+    const zodiacs = zodiacDrawsForProvince(province);
+    if (!zodiacs.length) {
+      closeZodiacDraw();
+      return;
+    }
+    const people = state.members.filter(function (member) { return member.province === province; });
+    const n = zodiacs.length;
+    const compact = window.matchMedia('(max-width: 760px)').matches;
+    const cols = n > 6 ? (compact ? 4 : 6) : n;
+    const rows = Math.ceil(n / cols);
+    const cardWidth = compact
+      ? (n > 6 ? 64 : n === 6 ? 80 : n === 5 ? 88 : n === 4 ? 100 : n === 3 ? 124 : n === 2 ? 132 : 140)
+      : (n > 6 ? 72 : n === 6 ? 80 : n === 5 ? 88 : n === 4 ? 100 : n === 3 ? 124 : n === 2 ? 132 : 140);
+    const gap = compact
+      ? (n > 6 ? 88 : n === 6 ? 52 : n === 5 ? 62 : n === 4 ? 79 : n === 3 ? 76 : 84)
+      : (n > 6 ? 50 : n === 6 ? 52 : n === 5 ? 62 : n === 4 ? 79 : n === 3 ? 76 : 84);
+    const rowGap = cardWidth * 1.45;
+    const stage = dom.zodiacDrawStage;
+    stage.innerHTML = '';
+    window.clearTimeout(zodiacDrawHideTimer);
+    zodiacs.forEach(function (zodiac, index) {
+      const source = $('.zodiac-card[data-zodiac="' + zodiac.name + '"]', dom.zodiacGrid);
+      if (!source) return;
+      const card = source.cloneNode(true);
+      card.classList.add('zodiac-draw-card');
+      card.classList.remove('is-active', 'is-match', 'is-empty');
+      card.disabled = false;
+      card.removeAttribute('disabled');
+      card.setAttribute('aria-pressed', 'false');
+      card.style.width = cardWidth + 'px';
+      const row = Math.floor(index / cols);
+      const col = index - row * cols;
+      const rowCount = Math.min(cols, n - row * cols);
+      const x = (col - (rowCount - 1) / 2) * gap;
+      const y = (row - (rows - 1) / 2) * rowGap - 18;
+      const rotation = (col - (rowCount - 1) / 2) * 3.4;
+      card.style.setProperty('--x', x.toFixed(1) + 'px');
+      card.style.setProperty('--y', y.toFixed(1) + 'px');
+      card.style.setProperty('--r', rotation.toFixed(2) + 'deg');
+      card.style.setProperty('--ry', (index % 2 ? -5 : 5) + 'deg');
+      card.style.setProperty('--tz', String((n - index) * 2) + 'px');
+      card.style.setProperty('--z', String(index + 1));
+      card.style.setProperty('--i', String(index));
+      card.addEventListener('click', function () {
+        Sound.playBronzeBell();
+        closeZodiacDraw();
+        applyZodiacFilter(zodiac.name);
+      });
+      stage.appendChild(card);
+    });
+    dom.zodiacDrawTitle.textContent = shortProvince(province) + ' · 地支抽卡';
+    dom.zodiacDrawMeta.textContent = people.length + ' 位同窗 · ' + n + ' 枚生肖';
+    dom.zodiacDraw.hidden = false;
+    dom.zodiacDraw.setAttribute('aria-hidden', 'false');
+    if (dom.zodiacPanel) dom.zodiacPanel.classList.add('is-drawing');
+    void stage.offsetWidth;
+    window.requestAnimationFrame(function () {
+      if (dom.zodiacDraw) dom.zodiacDraw.classList.add('is-open');
+    });
+    if (compact && dom.zodiacPanel) {
+      window.setTimeout(function () {
+        dom.zodiacPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 120);
+    }
+  }
+
   function handleMapClick(params) {
     if (!state.mapReady) return;
     if (!params || !params.name) return;
@@ -13711,7 +13966,10 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       return;
     }
 
+    const wasActive = state.filters.province === province;
     applyProvinceFilter(province);
+    if (wasActive) closeZodiacDraw();
+    else openZodiacDraw(province);
   }
 
   function triggerMapTaijiPulse() {
@@ -14477,6 +14735,19 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       if (!card || card.disabled) return;
       Sound.playBronzeBell();
       applyZodiacFilter(card.dataset.zodiac);
+    });
+    if (dom.zodiacDrawClose) {
+      dom.zodiacDrawClose.addEventListener('click', closeZodiacDraw);
+    }
+    if (dom.zodiacDraw) {
+      dom.zodiacDraw.addEventListener('click', function (event) {
+        if (event.target === dom.zodiacDraw) closeZodiacDraw();
+      });
+    }
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && dom.zodiacDraw && !dom.zodiacDraw.hidden) {
+        closeZodiacDraw();
+      }
     });
 
     // 四象：辅助筛选
