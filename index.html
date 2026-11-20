@@ -8972,6 +8972,20 @@ html.intro-disabled .totem-background::after {
 .zodiac-people-tip__sign { flex: none; min-width: 42px; color: rgba(214, 180, 113, 0.72); }
 .zodiac-people-tip__names { color: rgba(241, 229, 205, 0.94); overflow-wrap: anywhere; }
 .zodiac-people-tip__empty { color: rgba(235, 218, 185, 0.55); }
+.zodiac-people-tip__section {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 7px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(214, 180, 113, 0.12);
+  color: rgba(214, 180, 113, 0.92);
+  font-size: 10px;
+  letter-spacing: .12em;
+}
+.zodiac-people-tip__section:first-of-type { margin-top: 2px; padding-top: 0; border-top: 0; }
+.zodiac-people-tip__section b { font-weight: 500; color: rgba(235, 218, 185, 0.54); letter-spacing: .04em; }
 
 
 /* 省份提示：显示同省同窗姓名 */
@@ -9577,7 +9591,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
         <button class="logout-button" id="logoutButton" type="button" hidden>退出登录</button>
         <span class="header-meta">
-          同窗 <b id="headerMemberCount">0</b> 人 · 山河 <b id="headerProvinceCount">0</b> 省
+          学生 <b id="headerMemberCount">0</b> 人 · 教师 <b id="headerTeacherCount">0</b> 人 · 山河 <b id="headerProvinceCount">0</b> 省
         </span>
         <button
           class="sound-toggle"
@@ -9815,7 +9829,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
               class="china-map"
               id="chinaMap"
               role="img"
-              aria-label="中国省份地图。浅金代表同窗籍贯，铜金代表师资籍贯；可悬停查看，点击省份筛选同窗。"
+              aria-label="中国省份地图。浅金代表学生籍贯，铜金代表教师籍贯；可悬停查看，点击省份筛选学生。"
             ></div>
 
             <!-- 地图载入状态；成功后由 JS 隐藏 -->
@@ -9832,11 +9846,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
           <div class="map-legend" aria-hidden="true">
             <div class="legend-group">
-              <span class="legend-item" data-legend-group="students"><i class="legend-swatch is-student"></i>同窗</span>
-              <span class="legend-item" data-legend-group="teachers"><i class="legend-swatch is-teacher"></i>师资</span>
+              <span class="legend-item" data-legend-group="students"><i class="legend-swatch is-student"></i>学生</span>
+              <span class="legend-item" data-legend-group="teachers"><i class="legend-swatch is-teacher"></i>教师</span>
               <span class="legend-item"><i class="legend-swatch is-dim"></i>未命中</span>
             </div>
-            <span class="legend-total" id="mapLegendTotal">0 位同窗 · 0 位师资 · 0 省</span>
+            <span class="legend-total" id="mapLegendTotal">0 位学生 · 0 位教师 · 0 省</span>
           </div>
         </section>
       </section>
@@ -9884,14 +9898,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
             <span class="section-number teacher-seal" aria-hidden="true">参</span>
             <div>
               <p class="section-kicker">师者如灯 · 同脉相承</p>
-              <h2 class="section-title" id="teachersHeading">师资名录</h2>
-              <p class="teacher-subtitle">辅导员与专业老师的籍贯，也写在这张山河图上。</p>
+              <h2 class="section-title" id="teachersHeading">教师名录</h2>
+              <p class="teacher-subtitle">辅导员、导师与老师的籍贯，也写在这张山河图上。</p>
             </div>
           </div>
           <div class="teacher-tools">
             <div class="map-scope" id="mapScope" role="group" aria-label="地图显示范围">
               <button class="scope-btn" data-map-scope="students" type="button" aria-pressed="false">只看学生</button>
-              <button class="scope-btn" data-map-scope="teachers" type="button" aria-pressed="false">只看老师</button>
+              <button class="scope-btn" data-map-scope="teachers" type="button" aria-pressed="false">只看教师</button>
               <button class="scope-btn is-active" data-map-scope="all" type="button" aria-pressed="true">全部展示</button>
             </div>
             <button class="teacher-edit-toggle" id="teacherEditToggle" type="button" aria-expanded="false" title="页面编辑模式预设关闭">
@@ -9915,23 +9929,23 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         </div>
 
         <div class="teacher-toolbar">
-          <span class="teacher-count" id="teacherCount">共 0 位师资</span>
+          <span class="teacher-count" id="teacherCount">共 0 位教师</span>
           <button class="btn btn--gold teacher-add-btn" id="teacherAddBtn" type="button" hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
               <path d="M12 5v14M5 12h14"></path>
             </svg>
-            新增师资
+            新增教师
           </button>
         </div>
 
         <div class="teacher-list" id="teacherList"></div>
         <div class="teacher-empty" id="teacherEmpty" hidden>
-          暂无师资资料；进入编辑模式后可新增。
+          暂无教师资料；进入编辑模式后可新增。
         </div>
 
         <form class="teacher-form" id="teacherForm" hidden novalidate>
           <div class="teacher-form-head">
-            <h3 class="teacher-form-title" id="teacherFormTitle">新增师资</h3>
+            <h3 class="teacher-form-title" id="teacherFormTitle">新增教师</h3>
             <span class="teacher-save-state" id="teacherSaveState"></span>
           </div>
           <input id="teacherId" type="hidden" />
@@ -10547,7 +10561,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   ];
 
   // 师资是与学生完全独立的第二套资料；只新增这个模块，不动原有学生资料结构。
-  const TEACHER_TYPES = ['辅导员', '专业老师'];
+  const TEACHER_TYPES = ['辅导员', '导师', '专业老师'];
   const TEACHER_SEED_ROWS = [];
   const VIRTUAL_SEED_TEACHER_NAMES = ['李慧兰', '王砚秋', '陈守一'];
 
@@ -12172,7 +12186,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function cacheDom() {
     [
-      'headerMemberCount', 'headerProvinceCount', 'soundToggle', 'introSoundToggle', 'zodiacGrid', 'zodiacSideCount',
+      'headerMemberCount', 'headerTeacherCount', 'headerProvinceCount', 'soundToggle', 'introSoundToggle', 'zodiacGrid', 'zodiacSideCount',
       'zodiacDraw', 'zodiacDrawStage', 'zodiacDrawTitle', 'zodiacDrawMeta', 'zodiacDrawClose',
       'resetFiltersTop', 'elementButtons', 'treePanel', 'treeButton', 'treeRootOrigin', 'treeLore',
       'mapProvinceCount', 'mapLegendTotal', 'chinaMap', 'mapStage', 'mapState',
@@ -12367,9 +12381,9 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function getStatsScopeLabel() {
     const scope = getMapScope();
-    if (scope === 'teachers') return '师资';
-    if (scope === 'students') return '同窗';
-    return '同窗与师资';
+    if (scope === 'teachers') return '教师';
+    if (scope === 'students') return '学生';
+    return '学生与教师';
   }
 
   function getZodiacCounts(people) {
@@ -12452,12 +12466,6 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       document.body.appendChild(zodiacPeopleTipEl);
     }
     const people = badge._zodiacPeople;
-    const groups = new Map();
-    people.forEach(function (person) {
-      const key = person.constellation || '未填星座';
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(person.name);
-    });
     zodiacPeopleTipEl.textContent = '';
     const head = document.createElement('div');
     head.className = 'zodiac-people-tip__head';
@@ -12468,18 +12476,44 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     head.appendChild(title);
     head.appendChild(count);
     zodiacPeopleTipEl.appendChild(head);
-    groups.forEach(function (names, sign) {
-      const row = document.createElement('div');
-      row.className = 'zodiac-people-tip__group';
-      const signNode = document.createElement('span');
-      signNode.className = 'zodiac-people-tip__sign';
-      signNode.textContent = sign;
-      const namesNode = document.createElement('span');
-      namesNode.className = 'zodiac-people-tip__names';
-      namesNode.textContent = names.join('、');
-      row.appendChild(signNode);
-      row.appendChild(namesNode);
-      zodiacPeopleTipEl.appendChild(row);
+
+    [
+      { key: 'teacher', label: '教师' },
+      { key: 'student', label: '学生' }
+    ].forEach(function (section) {
+      const sectionPeople = people.filter(function (person) {
+        return (person.group || 'student') === section.key;
+      });
+      if (!sectionPeople.length) return;
+      const sectionHead = document.createElement('div');
+      sectionHead.className = 'zodiac-people-tip__section';
+      const sectionLabel = document.createElement('span');
+      sectionLabel.textContent = section.label;
+      const sectionCount = document.createElement('b');
+      sectionCount.textContent = sectionPeople.length + ' 人';
+      sectionHead.appendChild(sectionLabel);
+      sectionHead.appendChild(sectionCount);
+      zodiacPeopleTipEl.appendChild(sectionHead);
+
+      const groups = new Map();
+      sectionPeople.forEach(function (person) {
+        const key = person.constellation || '未填星座';
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(person.name);
+      });
+      groups.forEach(function (names, sign) {
+        const row = document.createElement('div');
+        row.className = 'zodiac-people-tip__group';
+        const signNode = document.createElement('span');
+        signNode.className = 'zodiac-people-tip__sign';
+        signNode.textContent = sign;
+        const namesNode = document.createElement('span');
+        namesNode.className = 'zodiac-people-tip__names';
+        namesNode.textContent = names.join('、');
+        row.appendChild(signNode);
+        row.appendChild(namesNode);
+        zodiacPeopleTipEl.appendChild(row);
+      });
     });
     zodiacPeopleTipEl.setAttribute('aria-hidden', 'false');
     zodiacPeopleTipEl.classList.add('is-visible');
@@ -12531,10 +12565,16 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         cornerNode.classList.toggle('multi-sign', multiSign);
         cornerNode.classList.toggle('is-empty-sign', uniqueConstellations.length === 0);
         cornerNode._zodiacPeople = multiSign ? peopleList.map(function (member) {
-          return { name: member.name, constellation: String(member.constellation || '').trim() };
+          return {
+            name: member.name,
+            constellation: String(member.constellation || '').trim(),
+            group: state.teachers.indexOf(member) !== -1 ? 'teacher' : 'student'
+          };
         }) : null;
         if (multiSign) {
-          cornerNode.setAttribute('aria-label', '群星，共 ' + peopleList.length + ' 人：' + peopleList.map(function (member) { return member.name; }).join('、'));
+          const teacherCount = peopleList.filter(function (member) { return state.teachers.indexOf(member) !== -1; }).length;
+          const studentCount = peopleList.length - teacherCount;
+          cornerNode.setAttribute('aria-label', '群星，教师 ' + teacherCount + ' 人、学生 ' + studentCount + ' 人：' + peopleList.map(function (member) { return member.name; }).join('、'));
         } else {
           cornerNode.removeAttribute('aria-label');
         }
@@ -12697,6 +12737,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     });
 
     dom.headerMemberCount.textContent = String(state.members.length);
+    dom.headerTeacherCount.textContent = String(state.teachers.length);
     dom.headerProvinceCount.textContent = String(allProvinces.size);
     dom.zodiacSideCount.textContent = String(getStatsPeople().length);
     dom.filteredCount.textContent = String(filtered.length);
@@ -12717,8 +12758,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     }
     dom.mapProvinceCount.textContent = String(markedProvinces.size);
     const legendParts = [];
-    if (showStudents) legendParts.push(filtered.length + ' 位同窗');
-    if (showTeachers) legendParts.push(state.teachers.length + ' 位师资');
+    if (showStudents) legendParts.push(filtered.length + ' 位学生');
+    if (showTeachers) legendParts.push(state.teachers.length + ' 位教师');
     legendParts.push(markedProvinces.size + ' 省');
     dom.mapLegendTotal.textContent = legendParts.join(' · ');
     $$('[data-legend-group]').forEach(function (item) {
@@ -12960,7 +13001,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function renderTeacherList() {
     if (!dom.teacherList || !dom.teacherCount) return;
-    dom.teacherCount.textContent = '共 ' + state.teachers.length + ' 位师资';
+    dom.teacherCount.textContent = '共 ' + state.teachers.length + ' 位教师';
     if (!state.teachers.length) {
       dom.teacherList.innerHTML = '';
       dom.teacherList.hidden = true;
@@ -13284,7 +13325,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     state.teacherEditingId = isNew ? null : teacher.id;
     state.teacherFormDirty = false;
     dom.teacherForm.hidden = false;
-    dom.teacherFormTitle.textContent = isNew ? '新增师资' : '编辑师资';
+    dom.teacherFormTitle.textContent = isNew ? '新增教师' : '编辑教师';
     dom.teacherId.value = isNew ? '' : teacher.id;
     dom.teacherName.value = isNew ? '' : teacher.name;
     dom.teacherType.value = isNew ? TEACHER_TYPES[0] : teacher.type;
@@ -13897,7 +13938,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
     if (showStudents) {
       parts.push(
-        '<div class="map-tooltip-students"><span>同窗</span><b>' + studentCount + '</b><span>位</span></div>'
+        '<div class="map-tooltip-students"><span>学生</span><b>' + studentCount + '</b><span>位</span></div>'
       );
       const provinceStudents = fullName && studentsByProvince ? studentsByProvince[fullName] || [] : [];
       if (provinceStudents.length) {
@@ -13931,7 +13972,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         );
       });
       if (!hasTeacherGroup) {
-        parts.push('<div class="map-tooltip-teacher-empty">师资 · 暂无</div>');
+        parts.push('<div class="map-tooltip-teacher-empty">教师 · 暂无</div>');
       }
       parts.push('</div>');
     }
