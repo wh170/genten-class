@@ -3625,6 +3625,67 @@ textarea.form-control {
   border-color: rgba(208, 139, 113, 0.7);
 }
 
+/* 在线人数 */
+.online-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: #a9c08d;
+  box-shadow: 0 0 8px rgba(169, 192, 141, 0.55);
+}
+
+.header-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 7px;
+  color: rgba(169, 192, 141, 0.8);
+  letter-spacing: 0.1em;
+}
+
+.header-online b {
+  color: #c6d9ac;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.login-online {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 16px;
+  margin-top: 10px;
+  color: rgba(169, 192, 141, 0.72);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+.login-online b {
+  color: #c6d9ac;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.footer-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(169, 192, 141, 0.62);
+  letter-spacing: 0.1em;
+}
+
+.footer-online b {
+  color: rgba(198, 217, 172, 0.82);
+  font-size: 1.15em;
+  font-weight: 400;
+}
+
+[data-online][hidden] {
+  display: none !important;
+}
+
 /* 页尾 */
 .page-footer {
   display: flex;
@@ -9323,6 +9384,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     <input type="password" id="loginPassword" placeholder="密码" autocomplete="current-password">
     <button id="loginBtn" type="button">入阵</button>
     <p id="loginError" class="login-error" role="alert"></p>
+    <p class="login-online" data-online hidden><i class="online-dot" aria-hidden="true"></i>当前在线 <b data-online-count>0</b> 人</p>
   </div>
 </div>
 
@@ -9950,6 +10012,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         <button class="logout-button" id="logoutButton" type="button" hidden>退出登录</button>
         <span class="header-meta">
           学生 <b id="headerMemberCount">0</b> 人 · 教师 <b id="headerTeacherCount">0</b> 人 · 山河 <b id="headerProvinceCount">0</b> 省
+          <span class="header-online" data-online hidden><i class="online-dot" aria-hidden="true"></i>在线 <b data-online-count>0</b> 人</span>
         </span>
         <button
           class="sound-toggle"
@@ -10437,6 +10500,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
     <footer class="page-footer">
       <span class="footer-mark">夜尽天明 · 洪洞大槐树班级群像</span>
+      <span class="footer-online" data-online hidden><i class="online-dot" aria-hidden="true"></i>在线 <b data-online-count>0</b> 人</span>
       <span>问我祖先在何处 · 山西洪洞大槐树</span>
     </footer>
   </div>
@@ -18863,6 +18927,170 @@ function friendlyRemoteError(error) {
     } else {
       init();
     }
+  })();
+  </script>
+  <script id="online-presence-script">
+  (function () {
+    'use strict';
+
+    var SUPABASE_URL = 'https://hvdfbpufjevwlattqttn.supabase.co';
+    var SUPABASE_KEY = 'sb_publishable_tPnlZdhrpeg4TQ1lsdjp3A_WDep2zhC';
+    var CHANNEL_NAME = 'ming-online-presence-v1';
+    var VISITOR_KEY = 'ming-online-visitor-v1';
+    var nodes = [];
+    var counts = [];
+    var client = null;
+    var channel = null;
+    var tracked = false;
+    var started = false;
+
+    function makeVisitorId() {
+      try {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+          return window.crypto.randomUUID();
+        }
+      } catch (error) { /* noop */ }
+      return 'v-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+    }
+
+    function visitorId() {
+      try {
+        var id = localStorage.getItem(VISITOR_KEY);
+        if (!id) {
+          id = makeVisitorId();
+          localStorage.setItem(VISITOR_KEY, id);
+        }
+        return id;
+      } catch (error) {
+        return makeVisitorId();
+      }
+    }
+
+    function hideOnline() {
+      for (var i = 0; i < nodes.length; i += 1) nodes[i].hidden = true;
+    }
+
+    function showOnline(count) {
+      if (!(count > 0)) {
+        hideOnline();
+        return;
+      }
+      for (var i = 0; i < nodes.length; i += 1) nodes[i].hidden = false;
+      for (var j = 0; j < counts.length; j += 1) counts[j].textContent = String(count);
+    }
+
+    function countPresence() {
+      if (!channel) return 0;
+      try {
+        var state = channel.presenceState() || {};
+        var keys = Object.keys(state);
+        var total = 0;
+        for (var i = 0; i < keys.length; i += 1) {
+          if (Array.isArray(state[keys[i]]) && state[keys[i]].length) total += 1;
+        }
+        return total;
+      } catch (error) {
+        return 0;
+      }
+    }
+
+    function syncOnline() {
+      if (tracked) showOnline(Math.max(1, countPresence()));
+    }
+
+    function loadSdk() {
+      if (window.supabase && typeof window.supabase.createClient === 'function') {
+        return Promise.resolve(true);
+      }
+      return new Promise(function (resolve) {
+        var done = false;
+        var script = document.createElement('script');
+        function finish(ok) {
+          if (done) return;
+          done = true;
+          resolve(Boolean(ok && window.supabase && typeof window.supabase.createClient === 'function'));
+        }
+        script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        script.onload = function () { finish(true); };
+        script.onerror = function () { finish(false); };
+        document.head.appendChild(script);
+        window.setTimeout(function () { finish(Boolean(window.supabase)); }, 8000);
+      });
+    }
+
+    function startChannel() {
+      try {
+        client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
+          },
+          realtime: {
+            params: { eventsPerSecond: 2 }
+          }
+        });
+        channel = client.channel(CHANNEL_NAME, {
+          config: { presence: { key: visitorId() } }
+        });
+      } catch (error) {
+        hideOnline();
+        return;
+      }
+
+      channel.on('presence', { event: 'sync' }, syncOnline);
+      channel.on('presence', { event: 'join' }, syncOnline);
+      channel.on('presence', { event: 'leave' }, syncOnline);
+
+      channel.subscribe(function (status) {
+        if (status === 'SUBSCRIBED') {
+          channel.track({ at: Date.now() }).then(function () {
+            tracked = true;
+            showOnline(Math.max(1, countPresence()));
+          }).catch(function () {
+            hideOnline();
+          });
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (!tracked) hideOnline();
+        }
+      });
+    }
+
+    function start() {
+      if (started) return;
+      started = true;
+      nodes = Array.prototype.slice.call(document.querySelectorAll('[data-online]'));
+      counts = Array.prototype.slice.call(document.querySelectorAll('[data-online-count]'));
+      if (!nodes.length) return;
+
+      loadSdk().then(function (ok) {
+        if (!ok) {
+          hideOnline();
+          return;
+        }
+        startChannel();
+      });
+
+      window.setTimeout(function () {
+        if (!tracked) hideOnline();
+      }, 12000);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', start, { once: true });
+    } else {
+      start();
+    }
+
+    window.addEventListener('pagehide', function () {
+      if (!channel) return;
+      try { channel.untrack(); } catch (error) { /* noop */ }
+    });
+
+    window.addEventListener('pageshow', function (event) {
+      if (!event.persisted || !channel || !tracked) return;
+      try { channel.track({ at: Date.now() }); } catch (error) { /* noop */ }
+    });
   })();
   </script>
 </body>
