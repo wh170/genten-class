@@ -10183,6 +10183,25 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
 }
 
 </style>
+<style id="fold-cleanup">
+
+/* 名录展开/收起：纯文字操作，不要边框与填充 */
+.section-fold,
+.section-fold:hover,
+.section-fold:active {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: .18rem 0 !important;
+}
+.section-fold:hover { color: #7a5a2e !important; }
+.section-fold:focus-visible {
+  outline: 1px solid rgba(55, 89, 65, .38) !important;
+  outline-offset: 3px !important;
+}
+
+</style>
 </head>
 
 <body>
