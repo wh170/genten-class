@@ -5005,13 +5005,13 @@ body {
 }
 
 .legend-swatch.is-student {
-  border-color: rgba(230, 199, 139, 0.74);
-  background: rgba(203, 172, 108, 0.36);
+  border-color: #9a6a26;
+  background: rgba(217, 172, 82, 0.78);
 }
 
 .legend-swatch.is-teacher {
-  border-color: rgba(202, 148, 91, 0.66);
-  background: rgba(157, 104, 58, 0.34);
+  border-color: #8b4f37;
+  background: rgba(178, 99, 65, 0.78);
 }
 
 .legend-item.is-scope-muted {
@@ -9693,7 +9693,22 @@ a { color: #806131; }
 .taiji-gua-label, .map-taiji-labels text { fill: #70562c !important; opacity: 0.9; }
 .taiji-ring-64 rect { fill: #7a5d31 !important; opacity: 0.48 !important; }
 .taiji-trigrams, .taiji-fret-ring, .taiji-ring-outer circle { stroke-opacity: 0.68; }
-.map-legend { color: #6b7f70; }
+.map-legend {
+  color: #5f7864;
+  font-size: 10px;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 1px solid rgba(112, 141, 117, 0.22);
+  border-radius: 10px;
+  background: rgba(255, 253, 247, 0.88);
+}
+.map-legend .legend-group { gap: 11px; }
+.map-legend .legend-item { gap: 5px; }
+.map-legend .legend-item b {
+  font-weight: 500;
+  color: #8a6732;
+  font-variant-numeric: tabular-nums;
+}
 .map-legend i { border-color: rgba(77, 109, 83, 0.36); }
 .map-tooltip {
   border-color: rgba(69, 100, 77, 0.34) !important;
@@ -10064,10 +10079,7 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
 }
 
 /* 山河圖整體翻成淡青灰，再低飽和 */
-.china-map {
-  filter: invert(1) grayscale(1) sepia(.45) saturate(.65) hue-rotate(55deg) brightness(1.07) contrast(.92) !important;
-  opacity: .96 !important;
-}
+/* 地图颜色由 ECharts 浅色主题直接给出，不再整块反相 */
 
 /* 64 卦與八卦在淺底上提高可讀性 */
 .map-taiji-svg { filter: sepia(.25) brightness(.78) saturate(.85) !important; }
@@ -10101,9 +10113,8 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
 
 /* 只翻轉地圖畫布，保留 tooltip 可讀 */
 .china-map { filter: none !important; }
-#chinaMap > div:first-child {
-  filter: invert(1) grayscale(1) sepia(.45) saturate(.65) hue-rotate(55deg) brightness(1.07) contrast(.92) !important;
-}
+#chinaMap > div:first-child { filter: none !important; }
+.china-map canvas { filter: none !important; opacity: 1 !important; }
 .map-tooltip {
   background: rgba(255, 253, 247, .98) !important;
   color: #2b4a35 !important;
@@ -11043,13 +11054,13 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
               </div>
             </div>
 
-            <p class="map-hint">点选省份 · 寻同乡同窗</p>
+            <p class="map-hint">色块越深，同乡与教师越多 · 点选查看</p>
           </div>
 
           <div class="map-legend" aria-hidden="true">
             <div class="legend-group">
-              <span class="legend-item" data-legend-group="students"><i class="legend-swatch is-student"></i>学生</span>
-              <span class="legend-item" data-legend-group="teachers"><i class="legend-swatch is-teacher"></i>教师</span>
+              <span class="legend-item" data-legend-group="students"><i class="legend-swatch is-student"></i>学生 <b id="legendStudentCount">0</b></span>
+              <span class="legend-item" data-legend-group="teachers"><i class="legend-swatch is-teacher"></i>教师 <b id="legendTeacherCount">0</b></span>
               <span class="legend-item"><i class="legend-swatch is-dim"></i>未命中</span>
             </div>
             <span class="legend-total" id="mapLegendTotal">0 位学生 · 0 位教师 · 0 省</span>
@@ -12029,17 +12040,17 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
     paper: '#e6dbc8',
     muted: '#bcae95',
     faint: '#94856f',
-    mapBase: 'rgba(36, 31, 24, 0.8)',
-    mapBaseDeep: '#1c1813',
-    mapBorder: 'rgba(205, 171, 106, 0.32)',
-    mapHighlight: 'rgba(196, 157, 91, 0.34)',
-    mapSelected: 'rgba(213, 179, 111, 0.5)',
-    mapSelectedLine: 'rgba(246, 221, 170, 0.94)',
-    studentArea: 'rgba(203, 171, 108, 0.3)',
-    studentLine: 'rgba(231, 201, 142, 0.68)',
-    teacherArea: 'rgba(161, 113, 70, 0.3)',
-    teacherLine: 'rgba(210, 151, 92, 0.76)',
-    teacherGlow: 'rgba(191, 127, 86, 0.18)',
+    mapBase: 'rgba(232, 238, 226, 0.88)',
+    mapBaseDeep: '#e9efe4',
+    mapBorder: 'rgba(79, 108, 86, 0.38)',
+    mapHighlight: 'rgba(186, 151, 82, 0.26)',
+    mapSelected: 'rgba(206, 168, 92, 0.46)',
+    mapSelectedLine: '#87652b',
+    studentArea: 'rgba(214, 168, 79, 0.42)',
+    studentLine: 'rgba(157, 105, 32, 0.92)',
+    teacherArea: 'rgba(178, 99, 65, 0.42)',
+    teacherLine: 'rgba(150, 75, 48, 0.92)',
+    teacherGlow: 'rgba(158, 82, 50, 0.2)',
   };
 
   const MAP_NAME = 'china-bighuai-class';
@@ -13548,7 +13559,7 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
       'headerMemberCount', 'headerTeacherCount', 'headerProvinceCount', 'soundToggle', 'introSoundToggle', 'zodiacGrid', 'zodiacSideCount',
       'zodiacDraw', 'zodiacDrawStage', 'zodiacDrawTitle', 'zodiacDrawMeta', 'zodiacDrawClose',
       'resetFiltersTop', 'elementButtons', 'treePanel', 'treeButton', 'treeRootOrigin', 'treeLore',
-      'mapProvinceCount', 'mapLegendTotal', 'chinaMap', 'mapStage', 'mapState',
+      'mapProvinceCount', 'mapLegendTotal', 'legendStudentCount', 'legendTeacherCount', 'chinaMap', 'mapStage', 'mapState',
       'membersSection', 'filterChips', 'filteredCount', 'totalCount', 'resetFiltersBottom',
       'addMemberBtn', 'importBtn', 'clearAllBtn', 'memberGrid', 'emptyState', 'emptyTitle',
       'emptyCopy', 'emptyActions', 'rosterLive', 'starBubble', 'starBubbleSymbol',
@@ -14144,6 +14155,8 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
     if (showTeachers) legendParts.push(getVisibleTeachers().length + ' 位教师');
     legendParts.push(markedProvinces.size + ' 省');
     dom.mapLegendTotal.textContent = legendParts.join(' · ');
+    if (dom.legendStudentCount) dom.legendStudentCount.textContent = String(filtered.length);
+    if (dom.legendTeacherCount) dom.legendTeacherCount.textContent = String(getVisibleTeachers().length);
     $$('[data-legend-group]').forEach(function (item) {
       const group = item.getAttribute('data-legend-group');
       item.classList.toggle('is-scope-muted', (group === 'students' && !showStudents) || (group === 'teachers' && !showTeachers));
@@ -15478,33 +15491,33 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
       const hasTeachers = showTeachers && teachers.length > 0;
       const isSelected = state.filters.province === province;
       const isMatched = hasStudents || hasTeachers;
-      const intensity = 0.17 + (studentCount / maxCount) * 0.23;
-      const teacherIntensity = 0.16 + (teachers.length / maxTeacherCount) * 0.2;
+      const intensity = 0.32 + (studentCount / maxCount) * 0.50;
+      const teacherIntensity = 0.28 + (teachers.length / maxTeacherCount) * 0.45;
       let areaColor = UI.mapBase;
       let borderColor = UI.mapBorder;
       let borderWidth = 0.65;
       let shadowBlur = 0;
       let shadowColor = 'rgba(217, 176, 101, 0.16)';
-      let labelColor = 'rgba(198, 178, 146, 0.32)';
+      let labelColor = 'rgba(60, 86, 66, 0.55)';
 
       // 浅金：同窗籍贯；铜金：师资籍贯。两者同时存在时，以浅金底＋铜金边框区分。
       if (hasStudents) {
-        areaColor = 'rgba(203, 171, 108, ' + intensity.toFixed(2) + ')';
+        areaColor = 'rgba(216, 172, 88, ' + intensity.toFixed(2) + ')';
         borderColor = UI.studentLine;
         borderWidth = 0.95;
         shadowBlur = 5;
         shadowColor = 'rgba(216, 165, 116, 0.16)';
-        labelColor = 'rgba(240, 222, 185, 0.84)';
+        labelColor = 'rgba(105, 72, 22, 0.95)';
       }
       if (hasTeachers) {
         if (!hasStudents) {
-          areaColor = 'rgba(161, 113, 70, ' + teacherIntensity.toFixed(2) + ')';
+          areaColor = 'rgba(180, 101, 66, ' + teacherIntensity.toFixed(2) + ')';
         }
         borderColor = UI.teacherLine;
         borderWidth = hasStudents ? 1.25 : 1.0;
         shadowBlur = hasStudents ? 7 : 8;
         shadowColor = UI.teacherGlow;
-        labelColor = 'rgba(235, 214, 180, 0.82)';
+        labelColor = 'rgba(115, 56, 35, 0.95)';
       }
 
       if (isSelected) {
@@ -15513,12 +15526,13 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
         borderWidth = 1.45;
         shadowBlur = 13;
         shadowColor = 'rgba(225, 172, 126, 0.24)';
-        labelColor = UI.gold200;
+        labelColor = '#5e431b';
       }
 
       return {
         name: province,
         value: studentCount,
+        teacherCount: teachers.length,
         itemStyle: {
           areaColor: areaColor,
           borderColor: borderColor,
@@ -15595,12 +15609,20 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
           cursor: 'pointer',
           label: {
             show: !compact,
-            color: 'rgba(198, 178, 146, 0.32)',
+            color: 'rgba(66, 89, 71, 0.55)',
             fontFamily: UI.fontFamily,
             fontSize: compact ? 7 : 9,
             letterSpacing: 0.5,
             formatter: function (params) {
-              return shortProvince(params.name);
+              const provinceName = shortProvince(params.name);
+              const item = params.data || {};
+              const studentCount = Number(item.value) || 0;
+              const teacherCount = Number(item.teacherCount) || 0;
+              if (!studentCount && !teacherCount) return provinceName;
+              const bits = [];
+              if (showStudents && studentCount) bits.push(studentCount + '生');
+              if (showTeachers && teacherCount) bits.push(teacherCount + '师');
+              return bits.length ? provinceName + '\n' + bits.join(' · ') : provinceName;
             },
           },
           itemStyle: {
@@ -15613,7 +15635,7 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
           emphasis: {
             label: {
               show: true,
-              color: UI.gold200,
+              color: '#5b3f16',
               fontFamily: UI.fontFamily,
               fontSize: 10,
             },
