@@ -7506,14 +7506,14 @@ svg {
 .taiji-gua-labels text {
   fill: #e0c28b;
   font-family: var(--font-serif);
-  font-size: 14px;
+  font-size: 19px;
   font-weight: 600;
   letter-spacing: 0.02em;
   text-anchor: middle;
   dominant-baseline: central;
   paint-order: stroke;
   stroke: rgba(15, 10, 7, 0.92);
-  stroke-width: 3px;
+  stroke-width: 3.8px;
   stroke-linejoin: round;
 }
 
@@ -7572,6 +7572,19 @@ svg {
   animation: taijiRotate 30s linear infinite;
 }
 
+/* 64 卦外环：最外层最慢，384 条爻线在 JS 中生成；与八卦同用纯 CSS 旋转。 */
+.taiji-ring-64 {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: taijiRotate 180s linear infinite;
+  filter: drop-shadow(0 0 3px rgba(219, 193, 138, 0.28));
+  will-change: transform;
+}
+
+.taiji-ring-64 g {
+  transition: opacity 0.3s ease;
+}
+
 /* 点按省份时整盘短暂震亮；class 由地图 click 切换。 */
 .map-taiji-svg {
   transform-box: fill-box;
@@ -7616,6 +7629,7 @@ svg {
   .map-taiji-labels,
   .taiji-ring-outer,
   .taiji-ring-mid,
+  .taiji-ring-64,
   .taiji-core {
     animation: none;
   }
@@ -10328,7 +10342,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
           <div class="map-stage" id="mapStage">
             <div class="map-taiji" aria-hidden="true">
-              <svg class="map-taiji-svg" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg class="map-taiji-svg" viewBox="-120 -120 840 840" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <radialGradient id="taijiWash" cx="50%" cy="47%" r="56%">
                     <stop offset="0" stop-color="#bc945a" stop-opacity=".2"/>
@@ -10342,6 +10356,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
                   </linearGradient>
                 </defs>
                 <circle cx="300" cy="300" r="286" fill="url(#taijiWash)"/>
+                <g id="hexagrams-layer" class="taiji-ring-64" shape-rendering="geometricPrecision"></g>
                 <g class="taiji-ring-outer" opacity=".4" stroke="url(#taijiGold)" stroke-width="1.1">
                   <circle cx="300" cy="300" r="272"/>
                   <circle cx="300" cy="300" r="252" stroke-opacity=".5" stroke-dasharray="1 7"/>
@@ -10369,7 +10384,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
             </div>
             <div class="map-taiji-overlay" aria-hidden="true"></div>
             <div class="map-taiji-labels" aria-hidden="true">
-              <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+              <svg viewBox="-120 -120 840 840" xmlns="http://www.w3.org/2000/svg">
                 <g class="taiji-gua-labels">
                   <g transform="rotate(0 300 300) translate(300 38)"><text x="0" y="0">乾</text></g>
                   <g transform="rotate(45 300 300) translate(300 38)"><text x="0" y="0">兑</text></g>
@@ -19451,5 +19466,57 @@ function friendlyRemoteError(error) {
 })();
 </script>
 
+<script>
+  /* 64 卦外环：二进制穷举 0–63，六爻逐条生成，不手写 SVG。 */
+  (function buildHexagramRing() {
+    var layer = document.getElementById('hexagrams-layer');
+    if (!layer) return;
+    var NS = 'http://www.w3.org/2000/svg';
+    var cx = 300, cy = 300, radius = 360, total = 64;
+    var fragment = document.createDocumentFragment();
+    for (var i = 0; i < total; i++) {
+      var angle = (360 / total) * i;
+      var rad = (angle - 90) * Math.PI / 180;
+      var x = cx + radius * Math.cos(rad);
+      var y = cy + radius * Math.sin(rad);
+      var group = document.createElementNS(NS, 'g');
+      group.setAttribute('transform', 'translate(' + x.toFixed(2) + ' ' + y.toFixed(2) + ') rotate(' + angle + ')');
+      group.setAttribute('class', 'taiji-hexagram');
+      for (var j = 0; j < 6; j++) {
+        var isYang = (i >> j) & 1;
+        var lineY = -8 + j * 3.2;
+        if (isYang) {
+          var bar = document.createElementNS(NS, 'rect');
+          bar.setAttribute('x', '-10');
+          bar.setAttribute('y', lineY.toFixed(2));
+          bar.setAttribute('width', '20');
+          bar.setAttribute('height', '1.8');
+          bar.setAttribute('fill', '#dbc18a');
+          bar.setAttribute('opacity', '0.72');
+          group.appendChild(bar);
+        } else {
+          var left = document.createElementNS(NS, 'rect');
+          left.setAttribute('x', '-10');
+          left.setAttribute('y', lineY.toFixed(2));
+          left.setAttribute('width', '8.5');
+          left.setAttribute('height', '1.8');
+          left.setAttribute('fill', '#dbc18a');
+          left.setAttribute('opacity', '0.72');
+          var right = document.createElementNS(NS, 'rect');
+          right.setAttribute('x', '1.5');
+          right.setAttribute('y', lineY.toFixed(2));
+          right.setAttribute('width', '8.5');
+          right.setAttribute('height', '1.8');
+          right.setAttribute('fill', '#dbc18a');
+          right.setAttribute('opacity', '0.72');
+          group.appendChild(left);
+          group.appendChild(right);
+        }
+      }
+      fragment.appendChild(group);
+    }
+    layer.appendChild(fragment);
+  })();
+</script>
 </body>
 </html>
