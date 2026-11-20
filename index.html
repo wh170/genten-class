@@ -11054,7 +11054,7 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
               </div>
             </div>
 
-            <p class="map-hint">色块越深，同乡与教师越多 · 点选查看</p>
+            <p class="map-hint" id="mapHint">色块越深，同乡与教师越多 · 点选查看</p>
           </div>
 
           <div class="map-legend" aria-hidden="true">
@@ -13559,7 +13559,7 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
       'headerMemberCount', 'headerTeacherCount', 'headerProvinceCount', 'soundToggle', 'introSoundToggle', 'zodiacGrid', 'zodiacSideCount',
       'zodiacDraw', 'zodiacDrawStage', 'zodiacDrawTitle', 'zodiacDrawMeta', 'zodiacDrawClose',
       'resetFiltersTop', 'elementButtons', 'treePanel', 'treeButton', 'treeRootOrigin', 'treeLore',
-      'mapProvinceCount', 'mapLegendTotal', 'legendStudentCount', 'legendTeacherCount', 'chinaMap', 'mapStage', 'mapState',
+      'mapProvinceCount', 'mapLegendTotal', 'legendStudentCount', 'legendTeacherCount', 'mapHint', 'chinaMap', 'mapStage', 'mapState',
       'membersSection', 'filterChips', 'filteredCount', 'totalCount', 'resetFiltersBottom',
       'addMemberBtn', 'importBtn', 'clearAllBtn', 'memberGrid', 'emptyState', 'emptyTitle',
       'emptyCopy', 'emptyActions', 'rosterLive', 'starBubble', 'starBubbleSymbol',
@@ -14157,6 +14157,11 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
     dom.mapLegendTotal.textContent = legendParts.join(' · ');
     if (dom.legendStudentCount) dom.legendStudentCount.textContent = String(filtered.length);
     if (dom.legendTeacherCount) dom.legendTeacherCount.textContent = String(getVisibleTeachers().length);
+    if (dom.mapHint) {
+      dom.mapHint.textContent = markedProvinces.size
+        ? '色块越深，同乡与教师越多 · 点选查看'
+        : '尚无籍贯数据 · 录入后省份会点亮';
+    }
     $$('[data-legend-group]').forEach(function (item) {
       const group = item.getAttribute('data-legend-group');
       item.classList.toggle('is-scope-muted', (group === 'students' && !showStudents) || (group === 'teachers' && !showTeachers));
