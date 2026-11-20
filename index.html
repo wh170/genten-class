@@ -10252,6 +10252,45 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
 }
 
 </style>
+<style id="logout-cleanup">
+
+/* 退出登录：与纸面主题一致的纯文字操作 */
+.logout-button {
+  min-height: 0 !important;
+  padding: 4px 2px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #436451 !important;
+  font-size: 10px !important;
+  letter-spacing: .1em !important;
+}
+.logout-button:hover {
+  color: #8a5a2e !important;
+  background: transparent !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.logout-button:focus-visible {
+  outline: 1px solid rgba(55,89,65,.38) !important;
+  outline-offset: 3px;
+}
+@media (max-width: 760px) {
+  .logout-button { min-height: 0 !important; padding: 3px 1px !important; font-size: 9px !important; }
+}
+
+</style>
+<style id="topbar-cleanup">
+
+/* 顶部操作组保持单行；音效按钮不参与压缩 */
+.top-actions { flex-wrap: nowrap; }
+.sound-toggle { flex: 0 0 auto; white-space: nowrap; }
+.sound-toggle .sound-label { white-space: nowrap; }
+.header-meta { flex: 0 0 auto; }
+.logout-button { flex: 0 0 auto; }
+
+</style>
 </head>
 
 <body>
