@@ -5669,39 +5669,6 @@ body {
 }
 
 
-/* 太极八卦高光叠层：静态时提供可辨识的中央太极；省份悬停时淡出，保持浮窗与标签清晰。 */
-.map-taiji-overlay {
-  position: absolute;
-  z-index: 3;
-  top: 48%;
-  left: 50%;
-  width: min(96%, 570px);
-  aspect-ratio: 1;
-  pointer-events: none;
-  opacity: 0.16;
-  transform: translate(-50%, -50%);
-  background: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MDAgNjAwIiBmaWxsPSJub25lIj4KPGcgc3Ryb2tlPSIjZDhiNzdkIiBzdHJva2Utb3BhY2l0eT0iLjkiPgo8Y2lyY2xlIGN4PSIzMDAiIGN5PSIzMDAiIHI9IjI3MiIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KPGNpcmNsZSBjeD0iMzAwIiBjeT0iMzAwIiByPSIyNTIiIHN0cm9rZS13aWR0aD0iLjciIHN0cm9rZS1kYXNoYXJyYXk9IjEgNyIgc3Ryb2tlLW9wYWNpdHk9Ii43Ii8+CjxjaXJjbGUgY3g9IjMwMCIgY3k9IjMwMCIgcj0iMTU2IiBzdHJva2Utd2lkdGg9Ii45IiBzdHJva2Utb3BhY2l0eT0iLjYiLz4KPC9nPgo8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgzMDAgMzAwKSI+CjxjaXJjbGUgcj0iMTE4IiBmaWxsPSIjOWY3YjQ2IiBmaWxsLW9wYWNpdHk9Ii4xIi8+CjxwYXRoIGQ9Ik0wIC0xMTggQTExOCAxMTggMCAwIDEgMCAxMTggQTU5IDU5IDAgMCAwIDAgMCBBNTkgNTkgMCAwIDEgMCAtMTE4IFoiIGZpbGw9IiNkOGI3N2QiIGZpbGwtb3BhY2l0eT0iLjE2Ii8+CjxwYXRoIGQ9Ik0wIC0xMTggQTU5IDU5IDAgMCAxIDAgMCBBNTkgNTkgMCAwIDAgMCAxMTgiIHN0cm9rZT0iIzM4MjQxNCIgc3Ryb2tlLXdpZHRoPSIyLjIiIHN0cm9rZS1vcGFjaXR5PSIuOCIvPgo8Y2lyY2xlIHI9IjExOCIgc3Ryb2tlPSIjMzgyNDE0IiBzdHJva2Utd2lkdGg9IjEuNyIgc3Ryb2tlLW9wYWNpdHk9Ii43NSIvPgo8Y2lyY2xlIGN4PSIwIiBjeT0iLTU5IiByPSIxNyIgZmlsbD0iI2Q4Yjc3ZCIgZmlsbC1vcGFjaXR5PSIuNTUiLz4KPGNpcmNsZSBjeD0iMCIgY3k9IjU5IiByPSIxNyIgZmlsbD0iIzE2MTEwYyIgZmlsbC1vcGFjaXR5PSIuNyIgc3Ryb2tlPSIjZDhiNzdkIiBzdHJva2Utd2lkdGg9IjEiIHN0cm9rZS1vcGFjaXR5PSIuNyIvPgo8L2c+Cjwvc3ZnPg==") center / contain no-repeat;
-  transition: opacity 0.3s var(--ease);
-}
-
-.map-stage.is-province-hover .map-taiji-overlay {
-  opacity: 0.025;
-}
-
-@media (max-width: 760px) {
-  .map-taiji-overlay {
-    width: min(112%, 500px);
-    opacity: 0.13;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .map-taiji-overlay {
-    transition: none;
-  }
-}
-
-
 /* ==========================================================================
    龙凤暗纹显形与少量红金点睛
    ─ 只改背景纹样、外围光晕与小面积点缀，不碰面板、卡片、地图数据与交互。
@@ -8436,7 +8403,6 @@ svg {
 
 /* 太极八卦完整显示：以地图区高度为上限，避免旋转时顶部被裁切 */
 .map-taiji,
-.map-taiji-overlay,
 .map-taiji-labels,
 .map-ripple-layer {
   width: auto;
@@ -11038,7 +11004,6 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
                 <circle class="map-taiji-pulse" cx="300" cy="300" r="272" stroke="url(#taijiGold)" stroke-width="1.5"/>
               </svg>
             </div>
-            <div class="map-taiji-overlay" aria-hidden="true"></div>
             <div class="map-taiji-labels" aria-hidden="true">
               <svg viewBox="-120 -120 840 840" xmlns="http://www.w3.org/2000/svg">
                 <g class="taiji-gua-labels">
