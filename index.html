@@ -11445,21 +11445,6 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
               </div>
             </div>
 
-            <label class="form-field form-field--full">
-              <span class="form-label">
-                个人留言
-                <span class="field-hint">最多 160 字</span>
-              </span>
-              <textarea
-                class="form-control"
-                id="memberMessage"
-                name="message"
-                maxlength="160"
-                rows="4"
-                placeholder="写给同窗、古槐，或未来的自己……"
-              ></textarea>
-              <span class="char-counter" id="memberMessageCount">0 / 160</span>
-            </label>
           </div>
 
           <p class="form-help">
@@ -13565,7 +13550,7 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
       'starBubbleTitle', 'starBubbleElement', 'starBubbleLore', 'themeModal', 'memberModal',
       'memberModalKicker', 'memberModalTitle', 'memberForm', 'memberFormAlert', 'memberName',
       'memberProvince', 'memberZodiac', 'memberConstellation', 'memberElementPreview',
-      'memberMessage', 'memberMessageCount', 'memberSaveBtn', 'importModal', 'importForm',
+      'memberSaveBtn', 'importModal', 'importForm',
       'importAlert', 'importFile', 'importTextarea', 'importSubmitBtn', 'downloadTemplateBtn',
       'confirmModal', 'confirmTitle', 'confirmCopy', 'confirmAcceptBtn', 'toast', 'stage',
       'rootConnectors', 'rootLeftGroup', 'rootRightGroup', 'volumeSlider',
@@ -16067,12 +16052,6 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
       '<span>由 ' + escapeHTML(sign.name) + ' 自动匹配</span>';
   }
 
-  function updateMessageCounter() {
-    const length = dom.memberMessage.value.length;
-    dom.memberMessageCount.textContent = length + ' / ' + APP_CONFIG.messageMaxLength;
-    dom.memberMessageCount.classList.toggle('is-near', length >= APP_CONFIG.messageMaxLength - 15);
-  }
-
   function openSelfProfileForm() {
     if (!isStudent()) return;
     const own = getOwnMember();
@@ -16107,7 +16086,6 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
       dom.memberProvince.value = target.province;
       dom.memberZodiac.value = target.zodiac;
       dom.memberConstellation.value = target.constellation;
-      dom.memberMessage.value = target.message;
     } else if (state.selfProfileMode) {
       dom.memberModalKicker.textContent = '同窗名录 · 本人';
       dom.memberModalTitle.textContent = '填写我的资料';
@@ -16121,7 +16099,6 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
     }
 
     updateMemberElementPreview();
-    updateMessageCounter();
     openModal(dom.memberModal, dom.memberName);
   }
 
@@ -16149,7 +16126,7 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
     const province = normalizeProvince(dom.memberProvince.value);
     const zodiac = normalizeZodiac(dom.memberZodiac.value);
     const constellation = normalizeSign(dom.memberConstellation.value);
-    const message = cleanMessage(dom.memberMessage.value);
+    const message = editingMember ? editingMember.message : '';
     const errors = [];
     let firstInvalid = null;
 
@@ -16171,10 +16148,6 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
     if (!constellation) {
       errors.push('请选择星座。');
       firstInvalid = firstInvalid || dom.memberConstellation;
-    }
-    if (Array.from(message).length > APP_CONFIG.messageMaxLength) {
-      errors.push('留言不可超过 ' + APP_CONFIG.messageMaxLength + ' 字。');
-      firstInvalid = firstInvalid || dom.memberMessage;
     }
 
     if (errors.length) {
@@ -16281,7 +16254,7 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
     }
 
     openConfirm({
-      title: '删除这条寄语？',
+      title: '删除这条同窗资料？',
       messageHTML:
         '将从名录中移除 <strong>' + escapeHTML(member.name) + '</strong> 的资料与寄语。<br />此操作无法复原。',
       confirmLabel: '确认删除',
@@ -16777,7 +16750,6 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
 
     // 表单互动
     dom.memberConstellation.addEventListener('change', updateMemberElementPreview);
-    dom.memberMessage.addEventListener('input', updateMessageCounter);
     dom.memberForm.addEventListener('submit', handleMemberSubmit);
     dom.importForm.addEventListener('submit', handleImportSubmit);
     dom.importFile.addEventListener('change', function () {
@@ -19195,7 +19167,7 @@ function friendlyRemoteError(error) {
     var can = canEdit(member);
     byId('memberMessagesOwner').textContent = member.name + ' · ' + (member.province || '') + (can ? ' · 可编辑' : ' · 只读');
     byId('memberMessagesNote').textContent = can
-      ? '个人留言会保留为第一条；之后最多再保留 6 条。卡片只显示最新一条，图片会自动压缩。'
+      ? '旧版个人留言会保留展示；之后最多再保留 6 条。卡片只显示最新一条，图片会自动压缩。'
       : '这里保存了这位同学的多条留言，卡片只显示最新一条。';
     byId('memberMessagesEmpty').hidden = display.length > 0;
     byId('memberMessagesEmpty').textContent = can ? '还没有留言，写下第一条吧。' : '这位同学还没有留言。';
@@ -19209,7 +19181,7 @@ function friendlyRemoteError(error) {
         (text ? '<p class="member-message-item-text">' + esc(text) + '</p>' : '') +
         (image ? '<a href="' + esc(image) + '" target="_blank" rel="noopener noreferrer"><img class="member-message-item-image" src="' + esc(image) + '" alt="" loading="lazy" referrerpolicy="no-referrer"></a>' : '') +
         (can && !isLegacy ? '<div class="member-message-item-actions"><button type="button" data-message-action="edit">编辑</button><button type="button" data-message-action="delete">删除</button></div>' : '') +
-        (isLegacy && can ? '<p class="member-message-legacy-note">个人留言可在“编辑同窗资料”中修改。</p>' : '') +
+        '' +
         '</article>';
     }).join('');
     Array.prototype.forEach.call(list.querySelectorAll('.member-message-item-image'), function (img) {
