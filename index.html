@@ -5255,6 +5255,12 @@ body {
   color: var(--gold-300);
 }
 
+.teacher-self-fill {
+  min-height: 30px;
+  padding: 5px 10px;
+  font-size: 9px;
+}
+
 .teacher-toolbar {
   display: flex;
   align-items: center;
@@ -10365,6 +10371,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
               <button class="scope-btn" data-map-scope="teachers" type="button" aria-pressed="false">只看教师</button>
               <button class="scope-btn is-active" data-map-scope="all" type="button" aria-pressed="true">全部展示</button>
             </div>
+            <button class="btn btn--gold teacher-self-fill" id="teacherSelfFillBtn" type="button" hidden>填写我的师资资料</button>
             <button class="teacher-edit-toggle" id="teacherEditToggle" type="button" aria-expanded="false" title="页面编辑模式预设关闭">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="5" y="10" width="14" height="10" rx="1.2"></rect>
@@ -10397,7 +10404,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
         <div class="teacher-list" id="teacherList"></div>
         <div class="teacher-empty" id="teacherEmpty" hidden>
-          暂无教师资料；进入编辑模式后可新增。
+          暂无已填写教师资料。
         </div>
 
         <form class="teacher-form" id="teacherForm" hidden novalidate>
@@ -11725,6 +11732,33 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     return Boolean(state.auth && state.auth.role === 'teacher');
   }
 
+  const TEACHER_TYPE_RANK = { '辅导员': 0, '导师': 1, '专业老师': 2 };
+
+  function isTeacherProfileComplete(teacher) {
+    if (!teacher || teacher.incomplete === true) return false;
+    return Boolean(
+      cleanName(teacher.name) &&
+      normalizeProvince(teacher.province) &&
+      normalizeZodiac(teacher.zodiac) &&
+      normalizeSign(teacher.constellation)
+    );
+  }
+
+  function getVisibleTeachers() {
+    return state.teachers
+      .filter(isTeacherProfileComplete)
+      .slice()
+      .sort(function (left, right) {
+        const leftRank = Object.prototype.hasOwnProperty.call(TEACHER_TYPE_RANK, left.type) ? TEACHER_TYPE_RANK[left.type] : 9;
+        const rightRank = Object.prototype.hasOwnProperty.call(TEACHER_TYPE_RANK, right.type) ? TEACHER_TYPE_RANK[right.type] : 9;
+        if (leftRank !== rightRank) return leftRank - rightRank;
+        const leftTime = Number(left.filledAt || left.createdAt || 0);
+        const rightTime = Number(right.filledAt || right.createdAt || 0);
+        if (leftTime !== rightTime) return leftTime - rightTime;
+        return String(left.name || '').localeCompare(String(right.name || ''), 'zh-Hans-CN');
+      });
+  }
+
   function getOwnTeacher() {
     if (!isTeacher()) return null;
     const ownId = String(state.auth.teacherId || '');
@@ -11765,6 +11799,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     if (!province && !incomplete) return null;
     const remark = Array.from(cleanMessage(raw.remark || '')).slice(0, 120).join('');
     const createdAtRaw = Number(raw.createdAt || 0);
+    const filledAtRaw = Number(raw.filledAt || 0);
     return {
       id: typeof raw.id === 'string' && raw.id ? raw.id : uniqueId('t'),
       name: name,
@@ -11776,6 +11811,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       incomplete: incomplete,
       seeded: raw.seeded === true,
       createdAt: Number.isFinite(createdAtRaw) && createdAtRaw > 0 ? createdAtRaw : Date.now(),
+      filledAt: Number.isFinite(filledAtRaw) && filledAtRaw > 0 ? filledAtRaw : 0,
     };
   }
 
@@ -12781,7 +12817,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       'rootConnectors', 'rootLeftGroup', 'rootRightGroup', 'volumeSlider',
       'mapScope', 'teacherEditToggle', 'teacherEditLabel', 'teacherEditStatus', 'teacherUnlock',
       'teacherPassword', 'teacherUnlockBtn', 'teacherUnlockCancel', 'teacherList', 'teacherEmpty',
-      'teacherCount', 'teacherAddBtn', 'teacherForm', 'teacherFormTitle', 'teacherSaveState',
+      'teacherCount', 'teacherAddBtn', 'teacherSelfFillBtn', 'teacherForm', 'teacherFormTitle', 'teacherSaveState',
       'addMemberLabel', 'authLayer', 'authForm', 'authInput', 'authFieldLabel', 'authHint',
       'authError', 'authSubmit', 'logoutButton',
       'teacherId', 'teacherName', 'teacherType', 'teacherZodiac', 'teacherConstellation', 'teacherProvince', 'teacherRemark', 'teacherFormClose', 'teachersSection',
@@ -12954,7 +12990,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     const scope = getMapScope();
     const people = [];
     if (scope !== 'teachers') people.push.apply(people, state.members);
-    if (scope !== 'students') people.push.apply(people, state.teachers);
+    if (scope !== 'students') people.push.apply(people, getVisibleTeachers());
     return people;
   }
 
@@ -13339,7 +13375,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     });
 
     dom.headerMemberCount.textContent = String(state.members.length);
-    dom.headerTeacherCount.textContent = String(state.teachers.length);
+    dom.headerTeacherCount.textContent = String(getVisibleTeachers().length);
     dom.headerProvinceCount.textContent = String(allProvinces.size);
     dom.zodiacSideCount.textContent = String(getStatsPeople().length);
     dom.filteredCount.textContent = String(filtered.length);
@@ -13348,7 +13384,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     const showStudents = scope !== 'teachers';
     const showTeachers = scope !== 'students';
     const teacherProvinces = new Set();
-    state.teachers.forEach(function (teacher) {
+    getVisibleTeachers().forEach(function (teacher) {
       teacherProvinces.add(teacher.province);
     });
     const markedProvinces = new Set();
@@ -13361,7 +13397,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     dom.mapProvinceCount.textContent = String(markedProvinces.size);
     const legendParts = [];
     if (showStudents) legendParts.push(filtered.length + ' 位学生');
-    if (showTeachers) legendParts.push(state.teachers.length + ' 位教师');
+    if (showTeachers) legendParts.push(getVisibleTeachers().length + ' 位教师');
     legendParts.push(markedProvinces.size + ' 省');
     dom.mapLegendTotal.textContent = legendParts.join(' · ');
     $$('[data-legend-group]').forEach(function (item) {
@@ -13604,8 +13640,9 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function renderTeacherList() {
     if (!dom.teacherList || !dom.teacherCount) return;
-    dom.teacherCount.textContent = '共 ' + state.teachers.length + ' 位教师';
-    if (!state.teachers.length) {
+    const visibleTeachers = getVisibleTeachers();
+    dom.teacherCount.textContent = '共 ' + visibleTeachers.length + ' 位教师';
+    if (!visibleTeachers.length) {
       dom.teacherList.innerHTML = '';
       dom.teacherList.hidden = true;
       if (dom.teacherEmpty) dom.teacherEmpty.hidden = false;
@@ -13613,7 +13650,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     }
     dom.teacherList.hidden = false;
     if (dom.teacherEmpty) dom.teacherEmpty.hidden = true;
-    dom.teacherList.innerHTML = state.teachers.map(buildTeacherCardMarkup).join('');
+    dom.teacherList.innerHTML = visibleTeachers.map(buildTeacherCardMarkup).join('');
   }
 
   function setTeacherEditStatus(message, isError, isSuccess) {
@@ -13734,6 +13771,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     const own = getOwnMember();
 
     state.teacherEditUnlocked = admin || teacher;
+
+    if (dom.teacherSelfFillBtn) {
+      const ownTeacher = teacher ? getOwnTeacher() : null;
+      dom.teacherSelfFillBtn.hidden = !teacher;
+      dom.teacherSelfFillBtn.textContent = (ownTeacher && isTeacherProfileComplete(ownTeacher))
+        ? '修改我的师资资料'
+        : '填写我的师资资料';
+    }
 
     if (dom.addMemberBtn) dom.addMemberBtn.hidden = !authed;
     if (dom.addMemberLabel) {
@@ -13920,10 +13965,36 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     syncTeacherEditUi();
   }
 
+  function openTeacherSelfForm() {
+    if (!isTeacher()) return;
+    if (dom.teachersSection && dom.teachersSection.classList.contains('is-collapsed') && dom.teacherFold) {
+      dom.teacherFold.click();
+    }
+    openTeacherForm(getOwnTeacher());
+  }
+
   function openTeacherForm(teacher) {
     if (!state.teacherEditUnlocked) return;
-    const ownTeacher = isTeacher() ? getOwnTeacher() : null;
-    if (!isAdmin() && (!ownTeacher || !teacher || teacher.id !== ownTeacher.id)) return;
+    if (!isAdmin()) {
+      if (!isTeacher()) return;
+      const ownId = String(state.auth.teacherId || '');
+      if (!ownId) return;
+      if (!teacher) {
+        teacher = {
+          id: ownId,
+          name: cleanName(state.auth.name || ''),
+          type: TEACHER_TYPES.indexOf(String(state.auth.teacherType || '')) >= 0 ? state.auth.teacherType : TEACHER_TYPES[0],
+          zodiac: '',
+          constellation: '',
+          province: '',
+          remark: '',
+          incomplete: true,
+          createdAt: Date.now(),
+          filledAt: 0,
+        };
+      }
+      if (teacher.id !== ownId) return;
+    }
     // 若切换到另一位师资，先保存目前表单的防抖内容。
     if (!dom.teacherForm.hidden) flushTeacherSave();
 
@@ -13980,11 +14051,31 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     }
 
     let teacher = dom.teacherId.value ? getTeacherById(dom.teacherId.value) : null;
+    let wasComplete = isTeacherProfileComplete(teacher);
     if (!isAdmin()) {
-      if (!teacher || teacher.id !== state.auth.teacherId) {
+      if (!isTeacher()) return false;
+      const ownId = String(state.auth.teacherId || '');
+      if (!ownId || (teacher && teacher.id !== ownId)) {
         dom.teacherSaveState.textContent = '仅可修改自己的师资资料';
         dom.teacherSaveState.classList.remove('is-saved');
         return false;
+      }
+      if (!teacher) {
+        teacher = {
+          id: ownId,
+          name: data.name,
+          type: TEACHER_TYPES.indexOf(String(state.auth.teacherType || '')) >= 0 ? state.auth.teacherType : TEACHER_TYPES[0],
+          zodiac: data.zodiac,
+          constellation: data.constellation,
+          province: data.province,
+          remark: data.remark,
+          incomplete: false,
+          createdAt: Date.now(),
+          filledAt: 0,
+        };
+        state.teachers.push(teacher);
+        dom.teacherId.value = ownId;
+        dom.teacherFormTitle.textContent = '编辑我的师资资料';
       }
       data.type = teacher.type;
     }
@@ -13996,6 +14087,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       teacher.province = data.province;
       teacher.remark = data.remark;
       teacher.incomplete = false;
+      if (!wasComplete || !teacher.filledAt) teacher.filledAt = Date.now();
     } else {
       if (!isAdmin()) return false;
       teacher = {
@@ -14008,6 +14100,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         remark: data.remark,
         incomplete: false,
         createdAt: Date.now(),
+        filledAt: Date.now(),
       };
       state.teachers.push(teacher);
       dom.teacherId.value = teacher.id;
@@ -14022,6 +14115,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     // 只刷新师资卡、地图与省份浮窗；不动学生名录。
     renderTeacherList();
     refreshMapOnly();
+    syncAuthControls();
     return true;
   }
 
@@ -14530,7 +14624,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function getTeachersByProvince() {
     const map = {};
-    state.teachers.forEach(function (teacher) {
+    getVisibleTeachers().forEach(function (teacher) {
       if (!map[teacher.province]) map[teacher.province] = [];
       map[teacher.province].push(teacher);
     });
@@ -15921,6 +16015,9 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         event.preventDefault();
         tryUnlockTeacherEdit();
       });
+    }
+    if (dom.teacherSelfFillBtn) {
+      dom.teacherSelfFillBtn.addEventListener('click', openTeacherSelfForm);
     }
     if (dom.teacherAddBtn) {
       dom.teacherAddBtn.addEventListener('click', function () {
