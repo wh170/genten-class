@@ -17856,8 +17856,8 @@ function friendlyRemoteError(error) {
         else await pushSelf();
         lastSignature = signature();
       } catch (e) {
-        console.warn('[class-sync] 储存失败，保留本机资料', e);
-        lastSignature = sig;
+        console.warn('[class-sync] 储存失败，保留本机资料，稍后重试', e);
+        // 不要更新 lastSignature：保持“未同步”状态，下一轮自动重试。
       } finally {
         busy = false;
       }
@@ -17876,7 +17876,11 @@ function friendlyRemoteError(error) {
       busy = true;
       writeState(remote.members, remote.teachers);
       setMeta(remote.updated_at);
+      lastSignature = signature();
       busy = false;
+      // 远端名册已变化：重载页面，让主应用以新资料重新渲染。
+      location.reload();
+      return;
     } catch (e) {
       busy = false;
       console.warn('[class-sync] 读取失败', e);
@@ -17895,6 +17899,18 @@ function friendlyRemoteError(error) {
       console.warn('[class-sync] 初始化失败，使用本机资料', e);
     }
   }
+  var pullTimer = null;
+  function scheduleRemotePull() {
+    clearTimeout(pullTimer);
+    pullTimer = setTimeout(function () { pullRemote(); }, 1200);
+  }
+  // 刷新 / 从其他应用切回 / 页面重新可见时，主动拉取云端最新名册。
+  window.addEventListener('pageshow', scheduleRemotePull);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) scheduleRemotePull();
+  });
+  window.addEventListener('focus', scheduleRemotePull);
+
   if (document.readyState === 'complete') setTimeout(boot, 800);
   else window.addEventListener('load', function () { setTimeout(boot, 800); });
 })();
