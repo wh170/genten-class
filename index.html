@@ -9048,6 +9048,236 @@ html.intro-disabled .totem-background::after {
   letter-spacing: .08em;
 }
 
+/* ==========================================================================
+   班级图库：三张一行，数量多时在框内纵向滚动
+   ========================================================================== */
+.gallery-panel {
+  position: relative;
+  z-index: 2;
+  margin-top: 22px;
+  padding: clamp(16px, 2.2vw, 28px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(150deg, rgba(30, 24, 17, 0.94), rgba(14, 11, 8, 0.96) 64%, rgba(23, 18, 12, 0.94));
+  box-shadow:
+    inset 0 1px 0 rgba(245, 221, 174, 0.035),
+    0 24px 60px rgba(0, 0, 0, 0.18);
+  scroll-margin-top: 18px;
+}
+
+.gallery-panel::before {
+  position: absolute;
+  top: -1px;
+  left: clamp(16px, 2.2vw, 28px);
+  width: 94px;
+  height: 1px;
+  content: "";
+  background: linear-gradient(90deg, var(--line-strong), transparent);
+}
+
+.gallery-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.gallery-intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.gallery-head .section-title {
+  font-size: clamp(19px, 2vw, 24px);
+}
+
+.gallery-subtitle {
+  margin-top: 2px;
+  color: var(--faint);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+}
+
+.gallery-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.gallery-count {
+  color: var(--faint);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.gallery-count b {
+  color: var(--gold-soft);
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.gallery-refresh {
+  min-height: 32px;
+  padding: 6px 9px;
+  font-size: 9px;
+}
+
+.gallery-status {
+  min-height: 14px;
+  margin-top: 8px;
+  color: var(--faint);
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+}
+
+.gallery-status.is-error { color: #d6a08a; }
+.gallery-status.is-ok { color: var(--gold-soft); }
+
+.gallery-scroll {
+  position: relative;
+  max-height: min(60vh, 560px);
+  margin-top: 10px;
+  padding: 2px 8px 4px 2px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(190, 155, 94, 0.46) rgba(18, 14, 10, 0.35);
+}
+
+.gallery-scroll::-webkit-scrollbar { width: 5px; }
+.gallery-scroll::-webkit-scrollbar-track { background: rgba(18, 14, 10, 0.35); }
+.gallery-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(190, 155, 94, 0.42);
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+
+.gallery-item {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 1px solid rgba(193, 160, 98, 0.22);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(84, 65, 40, 0.18), transparent 60%),
+    rgba(10, 8, 6, 0.84);
+  box-shadow: inset 0 0 0 1px rgba(242, 219, 173, 0.025);
+  transition: border-color 220ms var(--ease), transform 260ms var(--ease), filter 260ms var(--ease);
+}
+
+.gallery-item::after {
+  position: absolute;
+  inset: 48% 0 0;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(8, 6, 4, 0.7));
+}
+
+.gallery-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.86) brightness(0.92);
+  transition: transform 700ms var(--ease), filter 500ms var(--ease);
+}
+
+.gallery-item:hover,
+.gallery-item:focus-visible {
+  border-color: rgba(218, 183, 112, 0.68);
+  outline: none;
+  transform: translateY(-2px);
+}
+
+.gallery-item:hover img,
+.gallery-item:focus-visible img {
+  filter: saturate(1) brightness(1.04);
+  transform: scale(1.035);
+}
+
+.gallery-date {
+  position: absolute;
+  z-index: 1;
+  right: 8px;
+  bottom: 6px;
+  color: rgba(241, 224, 188, 0.72);
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+.gallery-empty {
+  display: flex;
+  min-height: 178px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 7px;
+  border: 1px dashed rgba(193, 160, 98, 0.18);
+  color: var(--faint);
+  text-align: center;
+}
+
+.gallery-empty[hidden] { display: none; }
+
+.gallery-empty-seal {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgba(193, 160, 98, 0.26);
+  border-radius: 50%;
+  color: var(--gold-soft);
+  font-family: var(--serif);
+  font-size: 17px;
+}
+
+.gallery-empty-title {
+  color: var(--gold-soft);
+  font-family: var(--serif);
+  font-size: 15px;
+  letter-spacing: 0.08em;
+}
+
+.gallery-empty-copy { font-size: 9.5px; letter-spacing: 0.04em; }
+
+.gallery-footnote {
+  margin-top: 9px;
+  color: rgba(168, 147, 115, 0.62);
+  font-size: 8.5px;
+  letter-spacing: 0.05em;
+}
+
+.gallery-upload-icon { width: 13px; height: 13px; }
+
+@media (max-width: 760px) {
+  .gallery-panel { margin-top: 14px; }
+  .gallery-scroll { max-height: 420px; padding-right: 5px; }
+  .gallery-grid { gap: 7px; }
+  .gallery-item { aspect-ratio: 1 / 1; }
+  .gallery-date { right: 5px; bottom: 4px; font-size: 7.5px; }
+  .gallery-actions { gap: 5px; }
+  .gallery-count { font-size: 9px; }
+  .gallery-refresh { min-height: 30px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-item,
+  .gallery-item img { transition: none; }
+}
 </style>
 <script>
 /* Supabase JS UMD v2 - inlined to avoid CDN blocking */
@@ -10163,6 +10393,45 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
           <span>名录资料只保存在本机浏览器 localStorage，不会上传至任何伺服器。</span>
           <span>首次开启载入示例名录 · 同学仅可管理本人资料，管理员可管理全部</span>
         </div>
+      </section>
+
+      <section class="gallery-panel" id="gallerySection" aria-labelledby="galleryHeading">
+        <div class="gallery-head">
+          <div class="gallery-intro">
+            <span class="section-number" aria-hidden="true">伍</span>
+            <div>
+              <p class="section-kicker">班影留痕 · 一树千枝</p>
+              <h2 class="section-title" id="galleryHeading">班级图库</h2>
+              <p class="gallery-subtitle">同窗、老师皆可添入；一帧一影，三张一行，慢慢翻看。</p>
+            </div>
+          </div>
+
+          <div class="gallery-actions">
+            <span class="gallery-count" id="galleryCount">共 <b>0</b> 张</span>
+            <button class="btn gallery-refresh" id="galleryRefreshBtn" type="button">刷新</button>
+            <button class="btn btn--gold" id="galleryUploadBtn" type="button">
+              <svg class="gallery-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 16V4m0 0-4 4m4-4 4 4" />
+                <path d="M4 16v3h16v-3" />
+              </svg>
+              上传图片
+            </button>
+            <input id="galleryFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden />
+          </div>
+        </div>
+
+        <p class="gallery-status" id="galleryStatus" role="status" aria-live="polite"></p>
+
+        <div class="gallery-scroll" id="galleryScroll">
+          <div class="gallery-grid" id="galleryGrid"></div>
+          <div class="gallery-empty" id="galleryEmpty">
+            <span class="gallery-empty-seal" aria-hidden="true">影</span>
+            <p class="gallery-empty-title">图库尚无照片</p>
+            <p class="gallery-empty-copy">点右上角「上传图片」，留下第一张班级记忆。</p>
+          </div>
+        </div>
+
+        <p class="gallery-footnote">图片保存在 Supabase Storage · 上传时自动压缩 · 所有登录成员均可上传 · 点击照片可查看原图</p>
       </section>
     </main>
 
@@ -18291,5 +18560,310 @@ function friendlyRemoteError(error) {
 })();
 
 </script>
+  <script id="gallery-script">
+  (function () {
+    'use strict';
+
+    var SUPABASE_URL = 'https://hvdfbpufjevwlattqttn.supabase.co';
+    var SUPABASE_KEY = 'sb_publishable_tPnlZdhrpeg4TQ1lsdjp3A_WDep2zhC';
+    var BUCKET = 'class-images';
+    var PREFIX = 'messages/gallery/';
+    var CACHE_KEY = 'ming-class-gallery-v1';
+    var MAX_FILES = 9;
+    var items = [];
+    var loading = false;
+    var uploading = false;
+
+    var dom = {};
+    var h = function (value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    };
+
+    function byId(id) { return document.getElementById(id); }
+
+    function setStatus(text, kind) {
+      if (!dom.status) return;
+      dom.status.textContent = text || '';
+      dom.status.className = 'gallery-status' + (kind ? ' is-' + kind : '');
+    }
+
+    function publicUrl(path) {
+      var clean = String(path || '').replace(/^\/+/, '');
+      return SUPABASE_URL + '/storage/v1/object/public/' + BUCKET + '/' +
+        clean.split('/').map(encodeURIComponent).join('/');
+    }
+
+    function isImageObject(row) {
+      var name = row && row.name ? String(row.name) : '';
+      var mime = row && row.metadata && row.metadata.mimetype ? String(row.metadata.mimetype) : '';
+      return /^image\//i.test(mime) || /\.(jpe?g|png|webp|gif)$/i.test(name);
+    }
+
+    function fullPath(name) {
+      var clean = String(name || '').replace(/^\/+/, '');
+      return clean.indexOf(PREFIX) === 0 ? clean : PREFIX + clean;
+    }
+
+    function formatDate(value) {
+      if (!value) return '';
+      var date = new Date(value);
+      if (isNaN(date.getTime())) return '';
+      return (date.getMonth() + 1 < 10 ? '0' : '') + (date.getMonth() + 1) +
+        '.' + (date.getDate() < 10 ? '0' : '') + date.getDate();
+    }
+
+    function readCache() {
+      try {
+        var raw = localStorage.getItem(CACHE_KEY);
+        var parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed.filter(function (item) {
+          return item && item.url;
+        }).slice(0, 120) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveCache() {
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(items.slice(0, 120)));
+      } catch (e) {
+        /* 图库本身仍可在线上正常使用，缓存失败不提示。 */
+      }
+    }
+
+    function render() {
+      if (!dom.grid || !dom.count || !dom.empty) return;
+      dom.grid.innerHTML = '';
+      items.forEach(function (item) {
+        var link = document.createElement('a');
+        link.className = 'gallery-item';
+        link.href = item.url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.setAttribute('aria-label', '查看班级图库照片' + (item.date ? '，' + item.date : ''));
+
+        var img = document.createElement('img');
+        img.src = item.url;
+        img.alt = '班级图库照片';
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.addEventListener('error', function () {
+          link.style.opacity = '0.35';
+          img.alt = '图片暂时无法加载';
+        }, { once: true });
+        link.appendChild(img);
+
+        if (item.date) {
+          var date = document.createElement('span');
+          date.className = 'gallery-date';
+          date.textContent = item.date;
+          link.appendChild(date);
+        }
+        dom.grid.appendChild(link);
+      });
+
+      dom.count.innerHTML = '共 <b>' + items.length + '</b> 张';
+      dom.empty.hidden = items.length > 0;
+      dom.grid.hidden = items.length === 0;
+    }
+
+    async function listGallery() {
+      var res = await fetch(SUPABASE_URL + '/storage/v1/object/list/' + BUCKET, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prefix: PREFIX,
+          limit: 100,
+          offset: 0,
+          sortBy: { column: 'created_at', order: 'desc' }
+        })
+      });
+      if (!res.ok) throw new Error('图库读取失败（' + res.status + '）');
+      var rows = await res.json();
+      if (!Array.isArray(rows)) return [];
+      return rows.filter(isImageObject).map(function (row) {
+        var path = fullPath(row.name);
+        return {
+          path: path,
+          url: publicUrl(path),
+          date: formatDate(row.created_at || row.updated_at),
+          created_at: row.created_at || row.updated_at || ''
+        };
+      }).sort(function (a, b) {
+        return String(b.created_at).localeCompare(String(a.created_at));
+      });
+    }
+
+    async function refreshGallery(showMessage) {
+      if (loading) return;
+      loading = true;
+      if (dom.refresh) dom.refresh.disabled = true;
+      if (showMessage !== false) setStatus('正在同步图库…');
+      try {
+        var remote = await listGallery();
+        items = remote;
+        saveCache();
+        render();
+        setStatus(items.length ? '已同步 ' + items.length + ' 张图库照片。' : '图库尚无照片，点右上角上传第一张。', 'ok');
+      } catch (e) {
+        render();
+        if (items.length) {
+          setStatus('远端暂时不可用，当前显示本机缓存。', 'error');
+        } else {
+          setStatus('图库暂时无法读取，请稍后点「刷新」重试。', 'error');
+        }
+      } finally {
+        loading = false;
+        if (dom.refresh) dom.refresh.disabled = false;
+      }
+    }
+
+    async function compressImage(file) {
+      if (!file || !/^image\//i.test(file.type || '')) {
+        throw new Error('请选择图片文件。');
+      }
+      if (file.size > 12 * 1024 * 1024) {
+        throw new Error('图片不能超过 12MB。');
+      }
+      var bitmap;
+      try {
+        bitmap = await createImageBitmap(file);
+      } catch (e) {
+        bitmap = await new Promise(function (resolve, reject) {
+          var image = new Image();
+          image.onload = function () { resolve(image); };
+          image.onerror = function () { reject(new Error('无法读取图片。')); };
+          image.src = URL.createObjectURL(file);
+        });
+      }
+      var width = bitmap.width || bitmap.naturalWidth;
+      var height = bitmap.height || bitmap.naturalHeight;
+      var scale = Math.min(1, 1600 / Math.max(width, height));
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#0d0a07';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      if (bitmap.close) bitmap.close();
+      var blob = await new Promise(function (resolve) {
+        canvas.toBlob(resolve, 'image/jpeg', 0.86);
+      });
+      if (!blob) throw new Error('图片压缩失败。');
+      return blob;
+    }
+
+    async function uploadOne(file) {
+      var blob = await compressImage(file);
+      var name = Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
+      var path = PREFIX + name;
+      var res = await fetch(SUPABASE_URL + '/storage/v1/object/' + BUCKET + '/' + path, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'image/jpeg',
+          'x-upsert': 'false'
+        },
+        body: blob
+      });
+      if (!res.ok) {
+        var detail = '';
+        try { detail = await res.text(); } catch (e) {}
+        if (res.status === 403) {
+          throw new Error('图库上传权限未开启，请联系管理员检查存储策略。');
+        }
+        throw new Error('上传失败（' + res.status + '）。' + (detail || ''));
+      }
+      return {
+        path: path,
+        url: publicUrl(path),
+        date: formatDate(new Date().toISOString()),
+        created_at: new Date().toISOString()
+      };
+    }
+
+    async function handleFiles(fileList) {
+      if (uploading) return;
+      var files = Array.prototype.slice.call(fileList || []).filter(Boolean);
+      if (!files.length) return;
+      if (files.length > MAX_FILES) {
+        files = files.slice(0, MAX_FILES);
+        setStatus('一次最多上传 ' + MAX_FILES + ' 张，已选取前 ' + MAX_FILES + ' 张。');
+      }
+      uploading = true;
+      if (dom.upload) dom.upload.disabled = true;
+      var success = 0;
+      var failed = 0;
+      for (var i = 0; i < files.length; i += 1) {
+        setStatus('正在上传 ' + (i + 1) + ' / ' + files.length + '…');
+        try {
+          var item = await uploadOne(files[i]);
+          items = items.filter(function (old) { return old.path !== item.path; });
+          items.unshift(item);
+          saveCache();
+          render();
+          success += 1;
+        } catch (e) {
+          failed += 1;
+          setStatus(e.message || '上传失败。', 'error');
+        }
+      }
+      uploading = false;
+      if (dom.upload) dom.upload.disabled = false;
+      if (dom.file) dom.file.value = '';
+      if (success) {
+        setStatus('已上传 ' + success + ' 张' + (failed ? '，' + failed + ' 张失败。' : '。'), failed ? 'error' : 'ok');
+        refreshGallery(false);
+      } else {
+        setStatus('没有图片上传成功，请稍后重试。', 'error');
+      }
+    }
+
+    function init() {
+      dom.grid = byId('galleryGrid');
+      dom.empty = byId('galleryEmpty');
+      dom.count = byId('galleryCount');
+      dom.status = byId('galleryStatus');
+      dom.upload = byId('galleryUploadBtn');
+      dom.refresh = byId('galleryRefreshBtn');
+      dom.file = byId('galleryFile');
+      if (!dom.grid || !dom.upload || !dom.file) return;
+
+      items = readCache();
+      render();
+      if (items.length) setStatus('正在同步最新图库…');
+
+      dom.upload.addEventListener('click', function () {
+        if (uploading) return;
+        dom.file.click();
+      });
+      dom.file.addEventListener('change', function () {
+        handleFiles(dom.file.files);
+      });
+      if (dom.refresh) {
+        dom.refresh.addEventListener('click', function () { refreshGallery(true); });
+      }
+      refreshGallery(items.length === 0);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init, { once: true });
+    } else {
+      init();
+    }
+  })();
+  </script>
 </body>
 </html>
