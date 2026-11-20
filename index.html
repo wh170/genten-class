@@ -8816,6 +8816,92 @@ html.intro-disabled .totem-background::after {
   .zodiac-draw-hint { font-size: 7px; }
 }
 
+
+/* ===== 3D 地支牌堆：取代原本 3×4 网格布局 ===== */
+.zodiac-draw { display: none !important; }
+.zodiac-panel .zodiac-grid {
+  position: relative;
+  display: block !important;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  margin-top: 12px;
+  padding: 0;
+  overflow: visible;
+  perspective: 1500px;
+  transform-style: preserve-3d;
+}
+.zodiac-panel .zodiac-card {
+  position: absolute !important;
+  top: 50%;
+  left: 50%;
+  width: 140px;
+  height: 190px;
+  margin: -95px 0 0 -70px;
+  aspect-ratio: auto;
+  border-radius: 6px;
+  z-index: calc(20 - var(--index, 0));
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  transform: translateY(calc(var(--index, 0) * 10px)) rotateZ(calc((var(--index, 0) - 5.5) * 2deg)) scale(0.95);
+  transition:
+    transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.5s ease,
+    box-shadow 0.5s ease,
+    border-color 0.3s ease;
+}
+.zodiac-panel .zodiac-grid .zodiac-card:not(.is-drawn):hover {
+  z-index: 30;
+  transform: translateY(calc(var(--index, 0) * 10px - 15px)) rotateZ(calc((var(--index, 0) - 5.5) * 2deg)) scale(1);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(200, 160, 90, 0.3);
+}
+.zodiac-panel .zodiac-grid.has-drawn .zodiac-card:not(.is-drawn) {
+  opacity: 0 !important;
+  pointer-events: none;
+  transform: translateY(150px) scale(0.5);
+}
+.zodiac-panel .zodiac-grid .zodiac-card.is-drawn {
+  z-index: var(--draw-z, 100) !important;
+  opacity: 1 !important;
+  transform:
+    translate3d(var(--draw-x, 0), var(--draw-y, -20px), var(--draw-tz, 120px))
+    rotateZ(var(--draw-r, 0)) rotateX(8deg) rotateY(var(--draw-ry, 0))
+    scale(var(--draw-scale, 1.2));
+  border-color: rgba(235, 214, 164, 0.72);
+  box-shadow:
+    0 0 40px rgba(235, 214, 164, 0.22),
+    0 25px 50px rgba(0, 0, 0, 0.75);
+}
+.zodiac-panel .zodiac-grid .zodiac-card.is-drawn:hover {
+  transform:
+    translate3d(var(--draw-x, 0), calc(var(--draw-y, -20px) - 6px), calc(var(--draw-tz, 120px) + 10px))
+    rotateZ(var(--draw-r, 0)) rotateX(6deg) rotateY(var(--draw-ry, 0))
+    scale(calc(var(--draw-scale, 1.2) + 0.035));
+}
+.zodiac-panel .zodiac-grid .zodiac-card:focus-visible { outline: 1px solid var(--gold-300); outline-offset: 3px; z-index: 120; }
+@media (max-width: 760px) {
+  .zodiac-panel .zodiac-grid { min-height: 420px; }
+  .zodiac-panel .zodiac-card { width: 132px; height: 178px; margin: -89px 0 0 -66px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zodiac-panel .zodiac-card { transition-duration: 0.01ms !important; }
+}
+
+
+/* 生肖角落：無成員 / 多星座聚合 */
+.zodiac-sign-corner.is-empty-sign {
+  opacity: .3;
+  color: rgba(225, 211, 184, .72);
+}
+.zodiac-sign-corner.multi-sign {
+  color: rgba(249, 230, 190, .94);
+  border-color: rgba(230, 195, 126, .46);
+}
+.zodiac-sign-corner.multi-sign .zodiac-sign-ring {
+  border-color: rgba(230, 195, 126, .5);
+  color: rgba(250, 224, 170, .95);
+}
 </style>
 <script>
 /* Supabase JS UMD v2 - inlined to avoid CDN blocking */
@@ -12274,13 +12360,31 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       const countNode = $('[data-zodiac-count]', card);
       if (countNode) countNode.textContent = String(total);
 
-      // 卡片右上角是「该生肖成员中最常见的星座」；无成员时使用装饰配对。
-      const dominant = total > 0 ? getDominantSignForZodiac(zodiac, statsPeople) : getSign(zodiac.defaultSign) || SIGNS[0];
+      // 卡片右上角：依實際成員的星座去重；0 人顯示「☆ 無」，1 人顯示該星座，多人顯示「✨ 群星」。
+      const peopleList = statsPeople.filter(function (member) { return member.zodiac === zodiacName; });
+      const uniqueConstellations = Array.from(new Set(peopleList.map(function (member) {
+        return String(member.constellation || '').trim();
+      }).filter(Boolean)));
+      const cornerNode = $('.zodiac-sign-corner', card);
       const symbolNode = $('[data-zodiac-sign-symbol]', card);
       const textNode = $('[data-zodiac-sign-text]', card);
-      if (symbolNode) symbolNode.textContent = dominant.symbol;
-      if (textNode) textNode.textContent = dominant.short;
+      if (cornerNode) {
+        cornerNode.classList.toggle('multi-sign', uniqueConstellations.length > 1);
+        cornerNode.classList.toggle('is-empty-sign', uniqueConstellations.length === 0);
+      }
+      if (uniqueConstellations.length === 0) {
+        if (symbolNode) symbolNode.textContent = '☆';
+        if (textNode) textNode.textContent = '無';
+      } else if (uniqueConstellations.length === 1) {
+        const onlySign = getSign(uniqueConstellations[0]) || getSign(zodiac.defaultSign) || SIGNS[0];
+        if (symbolNode) symbolNode.textContent = onlySign.symbol;
+        if (textNode) textNode.textContent = onlySign.short;
+      } else {
+        if (symbolNode) symbolNode.textContent = '✨';
+        if (textNode) textNode.textContent = '群星';
+      }
     });
+    renderZodiacDeck();
   }
 
   function syncElementButtons() {
@@ -13859,8 +13963,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   }
 
 
-  // 地图省份 → 生肖抽卡：保留原网格与筛选，只在省份选中时展开一层 3D 卡阵。
-  let zodiacDrawHideTimer = 0;
+  // 地图省份 → 生肖牌堆：保留原网格数据与筛选，只切换 3D 牌堆状态。
+  let zodiacDeckDraw = null;
 
   function zodiacDrawsForProvince(province) {
     return ZODIACS.filter(function (zodiac) {
@@ -13870,80 +13974,80 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     });
   }
 
+  function zodiacDeckState() {
+    if (zodiacDeckDraw && zodiacDeckDraw.length) return zodiacDeckDraw;
+    return state.filters.zodiac ? [state.filters.zodiac] : [];
+  }
+
+  function renderZodiacDeck() {
+    if (!dom.zodiacGrid) return;
+    const selected = zodiacDeckState();
+    const selectedSet = new Set(selected);
+    const cards = $$('.zodiac-card', dom.zodiacGrid);
+    const n = selected.length;
+    const compact = window.matchMedia('(max-width: 760px)').matches;
+    const cols = n > 6 ? (compact ? 4 : 6) : Math.max(n, 1);
+    const rows = Math.ceil(Math.max(n, 1) / cols);
+    const stageWidth = dom.zodiacGrid.clientWidth || 340;
+    const scale = n <= 1 ? 1.26 : n === 2 ? 1.08 : n === 3 ? 0.9 : n <= 6 ? 0.8 : 0.62;
+    const cardW = 140 * scale;
+    const maxWidth = Math.max(160, Math.min(stageWidth - 14, 340));
+    const colCount = Math.min(cols, Math.max(n, 1));
+    const gap = n > 1 ? Math.min(compact ? 106 : 118, (maxWidth - cardW) / Math.max(1, colCount - 1)) : 0;
+    const rowStep = compact ? 88 : 104;
+
+    cards.forEach(function (card, index) {
+      card.style.setProperty('--index', String(index));
+      const name = card.dataset.zodiac;
+      const drawn = selectedSet.has(name);
+      card.classList.toggle('is-drawn', drawn);
+      if (!drawn) {
+        ['--draw-x', '--draw-y', '--draw-r', '--draw-ry', '--draw-z', '--draw-tz', '--draw-scale'].forEach(function (key) {
+          card.style.removeProperty(key);
+        });
+        return;
+      }
+      const order = selected.indexOf(name);
+      const row = Math.floor(order / cols);
+      const col = order - row * cols;
+      const rowCount = Math.min(cols, n - row * cols);
+      const x = (col - (rowCount - 1) / 2) * gap;
+      const y = -18 + (row - (rows - 1) / 2) * rowStep;
+      card.style.setProperty('--draw-x', x.toFixed(1) + 'px');
+      card.style.setProperty('--draw-y', y.toFixed(1) + 'px');
+      card.style.setProperty('--draw-r', ((col - (rowCount - 1) / 2) * 3.2).toFixed(2) + 'deg');
+      card.style.setProperty('--draw-ry', (order % 2 ? -4 : 4) + 'deg');
+      const centerOrder = (n - 1) / 2;
+      const depth = Math.round((centerOrder - Math.abs(order - centerOrder)) * 3);
+      card.style.setProperty('--draw-z', String(100 + depth));
+      card.style.setProperty('--draw-tz', String(120 + depth * 4) + 'px');
+      card.style.setProperty('--draw-scale', scale.toFixed(2));
+    });
+    dom.zodiacGrid.classList.toggle('has-drawn', n > 0);
+  }
+
   function closeZodiacDraw() {
-    if (!dom.zodiacDraw) return;
-    dom.zodiacDraw.classList.remove('is-open');
-    if (dom.zodiacPanel) dom.zodiacPanel.classList.remove('is-drawing');
-    window.clearTimeout(zodiacDrawHideTimer);
-    zodiacDrawHideTimer = window.setTimeout(function () {
-      if (!dom.zodiacDraw || dom.zodiacDraw.classList.contains('is-open')) return;
-      dom.zodiacDraw.hidden = true;
-      dom.zodiacDraw.setAttribute('aria-hidden', 'true');
-    }, 320);
+    zodiacDeckDraw = null;
+    if (!dom.zodiacGrid) return;
+    dom.zodiacGrid.classList.remove('has-drawn');
+    $$('.zodiac-card', dom.zodiacGrid).forEach(function (card) {
+      card.classList.remove('is-drawn');
+      ['--draw-x', '--draw-y', '--draw-r', '--draw-ry', '--draw-z', '--draw-tz', '--draw-scale'].forEach(function (key) {
+        card.style.removeProperty(key);
+      });
+    });
   }
 
   function openZodiacDraw(province) {
-    if (!province || !dom.zodiacDraw || !dom.zodiacDrawStage) return;
+    if (!province || !dom.zodiacGrid) return;
     const zodiacs = zodiacDrawsForProvince(province);
     if (!zodiacs.length) {
       closeZodiacDraw();
       return;
     }
-    const people = state.members.filter(function (member) { return member.province === province; });
-    const n = zodiacs.length;
-    const compact = window.matchMedia('(max-width: 760px)').matches;
-    const cols = n > 6 ? (compact ? 4 : 6) : n;
-    const rows = Math.ceil(n / cols);
-    const cardWidth = compact
-      ? (n > 6 ? 64 : n === 6 ? 80 : n === 5 ? 88 : n === 4 ? 100 : n === 3 ? 124 : n === 2 ? 132 : 140)
-      : (n > 6 ? 72 : n === 6 ? 80 : n === 5 ? 88 : n === 4 ? 100 : n === 3 ? 124 : n === 2 ? 132 : 140);
-    const gap = compact
-      ? (n > 6 ? 88 : n === 6 ? 52 : n === 5 ? 62 : n === 4 ? 79 : n === 3 ? 76 : 84)
-      : (n > 6 ? 50 : n === 6 ? 52 : n === 5 ? 62 : n === 4 ? 79 : n === 3 ? 76 : 84);
-    const rowGap = cardWidth * 1.45;
-    const stage = dom.zodiacDrawStage;
-    stage.innerHTML = '';
-    window.clearTimeout(zodiacDrawHideTimer);
-    zodiacs.forEach(function (zodiac, index) {
-      const source = $('.zodiac-card[data-zodiac="' + zodiac.name + '"]', dom.zodiacGrid);
-      if (!source) return;
-      const card = source.cloneNode(true);
-      card.classList.add('zodiac-draw-card');
-      card.classList.remove('is-active', 'is-match', 'is-empty');
-      card.disabled = false;
-      card.removeAttribute('disabled');
-      card.setAttribute('aria-pressed', 'false');
-      card.style.width = cardWidth + 'px';
-      const row = Math.floor(index / cols);
-      const col = index - row * cols;
-      const rowCount = Math.min(cols, n - row * cols);
-      const x = (col - (rowCount - 1) / 2) * gap;
-      const y = (row - (rows - 1) / 2) * rowGap - 18;
-      const rotation = (col - (rowCount - 1) / 2) * 3.4;
-      card.style.setProperty('--x', x.toFixed(1) + 'px');
-      card.style.setProperty('--y', y.toFixed(1) + 'px');
-      card.style.setProperty('--r', rotation.toFixed(2) + 'deg');
-      card.style.setProperty('--ry', (index % 2 ? -5 : 5) + 'deg');
-      card.style.setProperty('--tz', String((n - index) * 2) + 'px');
-      card.style.setProperty('--z', String(index + 1));
-      card.style.setProperty('--i', String(index));
-      card.addEventListener('click', function () {
-        Sound.playBronzeBell();
-        closeZodiacDraw();
-        applyZodiacFilter(zodiac.name);
-      });
-      stage.appendChild(card);
-    });
-    dom.zodiacDrawTitle.textContent = shortProvince(province) + ' · 地支抽卡';
-    dom.zodiacDrawMeta.textContent = people.length + ' 位同窗 · ' + n + ' 枚生肖';
-    dom.zodiacDraw.hidden = false;
-    dom.zodiacDraw.setAttribute('aria-hidden', 'false');
-    if (dom.zodiacPanel) dom.zodiacPanel.classList.add('is-drawing');
-    void stage.offsetWidth;
-    window.requestAnimationFrame(function () {
-      if (dom.zodiacDraw) dom.zodiacDraw.classList.add('is-open');
-    });
-    if (compact && dom.zodiacPanel) {
+    zodiacDeckDraw = zodiacs.map(function (zodiac) { return zodiac.name; });
+    renderZodiacDeck();
+    if (window.matchMedia('(max-width: 760px)').matches && dom.zodiacPanel) {
       window.setTimeout(function () {
         dom.zodiacPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 120);
@@ -14745,9 +14849,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       });
     }
     document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && dom.zodiacDraw && !dom.zodiacDraw.hidden) {
-        closeZodiacDraw();
-      }
+      if (event.key !== 'Escape') return;
+      if (zodiacDeckDraw || (dom.zodiacDraw && !dom.zodiacDraw.hidden)) closeZodiacDraw();
     });
 
     // 四象：辅助筛选
