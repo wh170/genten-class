@@ -8363,6 +8363,48 @@ body.is-auth-locked { overflow: hidden; }
 .login-box #loginBtn { margin-top:6px; }
 @media (max-width:560px) { .login-box #loginInput, .login-box #loginPassword { width:100%; max-width:280px; } }
 
+/* 登入身份：学生 / 管理员 / 教师 */
+.login-role-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto 16px;
+  padding: 4px;
+  border: 1px solid rgba(200, 160, 90, 0.28);
+  background: rgba(12, 9, 6, 0.34);
+}
+.login-box .login-role-tabs button {
+  display: block;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(205, 175, 122, 0.7);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.login-box .login-role-tabs button:hover {
+  background: rgba(200, 160, 90, 0.1);
+  color: #f3e5c2;
+}
+.login-box .login-role-tabs button.is-active {
+  border-color: rgba(219, 193, 138, 0.78);
+  background: rgba(200, 160, 90, 0.17);
+  color: #f3e5c2;
+  box-shadow: inset 0 0 14px rgba(200, 160, 90, 0.08);
+}
+.login-box .login-role-tabs button:focus-visible {
+  outline: 1px solid #ebd6a4;
+  outline-offset: 2px;
+}
+
 /* Temporarily hide the header quote, keep markup for later restore */
 .top-quote[hidden] {
   display: block !important;
@@ -9041,8 +9083,13 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 <div id="loginOverlay" class="login-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
   <div class="login-box">
     <h2 id="loginTitle">星宿寻根阵</h2>
-    <p class="login-sub">请输入学号与密码；管理员请使用管理员帐号。</p>
-    <input type="text" id="loginInput" placeholder="学号 / 管理员帐号" autocomplete="username" spellcheck="false">
+    <div class="login-role-tabs" role="tablist" aria-label="选择登录身份">
+      <button type="button" class="is-active" data-login-role="student" role="tab" aria-selected="true">学生</button>
+      <button type="button" data-login-role="admin" role="tab" aria-selected="false">管理员</button>
+      <button type="button" data-login-role="teacher" role="tab" aria-selected="false">教师</button>
+    </div>
+    <p class="login-sub" id="loginSub">请输入学号与密码；教师请切换到教师身份。</p>
+    <input type="text" id="loginInput" placeholder="学号 / 学生账号" autocomplete="username" spellcheck="false">
     <input type="password" id="loginPassword" placeholder="密码" autocomplete="current-password">
     <button id="loginBtn" type="button">入阵</button>
     <p id="loginError" class="login-error" role="alert"></p>
@@ -9084,6 +9131,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   var loginPassword = $('loginPassword');
   var loginBtn = $('loginBtn');
   var loginError = $('loginError');
+  var loginSub = $('loginSub');
+  var loginRoleButtons = document.querySelectorAll('[data-login-role]');
   var newPwdInput = $('newPwdInput');
   var confirmPwdInput = $('confirmPwdInput');
   var savePwdBtn = $('savePwdBtn');
@@ -9093,10 +9142,49 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   var sdkPromise = null;
   var busy = false;
   var pendingUser = null;
+  var loginRole = 'student';
+  var LOGIN_ROLE_COPY = {
+    student: {
+      sub: '请输入学号与密码；教师请切换到教师身份。',
+      placeholder: '学号 / 学生账号',
+      empty: '请输入学号或学生账号。',
+      autocomplete: 'username'
+    },
+    admin: {
+      sub: '请输入管理员账号与密码；学生请切换到学生身份。',
+      placeholder: '管理员账号',
+      empty: '请输入管理员账号。',
+      autocomplete: 'username'
+    },
+    teacher: {
+      sub: '请输入教师账号（姓名首字母，如 wj）与密码。',
+      placeholder: '教师账号（如 wj）',
+      empty: '请输入教师账号。',
+      autocomplete: 'username'
+    }
+  };
 
   function normalize(value) { return String(value == null ? '' : value).trim(); }
   function setLoginError(message) { if (loginError) loginError.textContent = message || ''; }
   function setPwdError(message) { if (pwdError) pwdError.textContent = message || ''; }
+
+  function setLoginRole(role, focusInput) {
+    loginRole = LOGIN_ROLE_COPY[role] ? role : 'student';
+    loginRoleButtons.forEach(function (button) {
+      var active = button.getAttribute('data-login-role') === loginRole;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-selected', String(active));
+      button.tabIndex = active ? 0 : -1;
+    });
+    var copy = LOGIN_ROLE_COPY[loginRole];
+    if (loginSub) loginSub.textContent = copy.sub;
+    if (loginInput) {
+      loginInput.placeholder = copy.placeholder;
+      loginInput.setAttribute('autocomplete', copy.autocomplete);
+    }
+    setLoginError('');
+    if (focusInput && loginInput) loginInput.focus();
+  }
   function getToken() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
   function setToken(token) { try { localStorage.setItem(TOKEN_KEY, token); } catch (e) {} }
   function clearAuthStorage() {
@@ -9165,9 +9253,22 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   function finishLogin(user) {
     if (!user || !user.token) { setLoginError('登入资料不完整，请重试。'); return; }
     setToken(user.token);
-    var oldAuth = user.is_admin
-      ? { role: 'admin', name: '管理员', studentId: '', loginAt: Date.now() }
-      : { role: 'student', name: user.name, studentId: String(user.student_id), loginAt: Date.now() };
+    var role = user.role || (user.is_admin ? 'admin' : 'student');
+    var oldAuth;
+    if (role === 'admin') {
+      oldAuth = { role: 'admin', name: '管理员', studentId: '', loginAt: Date.now() };
+    } else if (role === 'teacher') {
+      oldAuth = {
+        role: 'teacher',
+        name: user.name || '教师',
+        studentId: String(user.student_id || ''),
+        teacherId: String(user.teacher_id || ''),
+        teacherType: String(user.teacher_type || ''),
+        loginAt: Date.now()
+      };
+    } else {
+      oldAuth = { role: 'student', name: user.name, studentId: String(user.student_id), loginAt: Date.now() };
+    }
     try {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(oldAuth));
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
@@ -9196,21 +9297,42 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     var account = normalize(loginInput ? loginInput.value : '');
     var password = loginPassword ? String(loginPassword.value || '') : '';
     setLoginError('');
-    if (!account) { setLoginError('请输入学号或管理员帐号。'); if (loginInput) loginInput.focus(); return; }
+    if (!account) { setLoginError(LOGIN_ROLE_COPY[loginRole].empty); if (loginInput) loginInput.focus(); return; }
     if (!password) { setLoginError('请输入密码。'); if (loginPassword) loginPassword.focus(); return; }
 
     busy = true;
     setBusy(loginBtn, true, '入阵中…');
     try {
-      var result = await rpc('class_login', { p_login: account, p_password: password });
+      var result;
+      try {
+        result = await rpc('class_login', { p_login: account, p_password: password, p_role: loginRole });
+      } catch (loginError) {
+        var message = String(loginError && loginError.message || '');
+        var missingRoleFunction = /could not find the function|function.*not found|schema cache|PGRST202/i.test(message);
+        if (!missingRoleFunction) throw loginError;
+        if (loginRole === 'teacher') {
+          setLoginError('教师登录通道尚未启用，请管理员先在 Supabase 执行教师账号初始化。');
+          return;
+        }
+        // 兼容尚未执行教师 SQL 的环境：学生／管理员仍走原本的二参数函数。
+        result = await rpc('class_login', { p_login: account, p_password: password });
+      }
       if (!result.ok) {
         setLoginError(result.error || '帐号或密码不正确。');
         return;
       }
+      var actualRole = result.role || (result.is_admin ? 'admin' : 'student');
+      if (actualRole !== loginRole) {
+        setLoginError('请选择正确的登录身份。');
+        return;
+      }
       var user = {
         token: result.token,
+        role: actualRole,
         name: result.name,
         student_id: result.student_id,
+        teacher_id: result.teacher_id || '',
+        teacher_type: result.teacher_type || '',
         is_admin: Boolean(result.is_admin),
         must_change: Boolean(result.must_change)
       };
@@ -9248,6 +9370,12 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function bind() {
     if (loginBtn) loginBtn.addEventListener('click', handleLogin);
+    loginRoleButtons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        setLoginRole(button.getAttribute('data-login-role'), true);
+      });
+    });
+    setLoginRole(loginRole, false);
     if (loginInput) loginInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); if (loginPassword) loginPassword.focus(); } });
     if (loginPassword) loginPassword.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); handleLogin(); } });
     if (savePwdBtn) savePwdBtn.addEventListener('click', handleSavePassword);
@@ -11177,6 +11305,18 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
           return { role: 'student', name: entry.name, studentId: entry.studentId };
         }
       }
+      if (parsed.role === 'teacher') {
+        const teacherId = String(parsed.teacherId || '');
+        if (teacherId) {
+          return {
+            role: 'teacher',
+            name: parsed.name || '教师',
+            studentId: String(parsed.studentId || ''),
+            teacherId: teacherId,
+            teacherType: String(parsed.teacherType || ''),
+          };
+        }
+      }
     } catch (error) {
       /* 清除坏资料，回到登录 */
     }
@@ -11189,6 +11329,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     return storageSet(STORAGE_KEYS.auth, JSON.stringify({
       role: auth.role,
       studentId: auth.studentId || '',
+      teacherId: auth.teacherId || '',
+      teacherType: auth.teacherType || '',
       name: auth.name || '',
       loginAt: Date.now(),
     }));
@@ -11208,6 +11350,17 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function isStudent() {
     return Boolean(state.auth && state.auth.role === 'student');
+  }
+
+  function isTeacher() {
+    return Boolean(state.auth && state.auth.role === 'teacher');
+  }
+
+  function getOwnTeacher() {
+    if (!isTeacher()) return null;
+    const ownId = String(state.auth.teacherId || '');
+    if (!ownId) return null;
+    return state.teachers.find(function (teacher) { return teacher.id === ownId; }) || null;
   }
 
   function getOwnMember() {
@@ -11232,10 +11385,15 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     if (!name || Array.from(name).length > 20) return null;
     const type = cleanText(raw.type);
     if (TEACHER_TYPES.indexOf(type) === -1) return null;
-    const zodiac = normalizeZodiac(raw.zodiac) || fallbackTeacherZodiac(name);
-    const constellation = normalizeSign(raw.constellation) || fallbackTeacherConstellation(name);
-    const province = normalizeProvince(raw.province);
-    if (!province) return null;
+    const incomplete = raw.incomplete === true;
+    const zodiac = (incomplete && !normalizeZodiac(raw.zodiac))
+      ? ''
+      : (normalizeZodiac(raw.zodiac) || fallbackTeacherZodiac(name));
+    const constellation = (incomplete && !normalizeSign(raw.constellation))
+      ? ''
+      : (normalizeSign(raw.constellation) || fallbackTeacherConstellation(name));
+    const province = normalizeProvince(raw.province) || '';
+    if (!province && !incomplete) return null;
     const remark = Array.from(cleanMessage(raw.remark || '')).slice(0, 120).join('');
     const createdAtRaw = Number(raw.createdAt || 0);
     return {
@@ -11246,6 +11404,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       constellation: constellation,
       province: province,
       remark: remark,
+      incomplete: incomplete,
       createdAt: Number.isFinite(createdAtRaw) && createdAtRaw > 0 ? createdAtRaw : Date.now(),
     };
   }
@@ -13035,17 +13194,18 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function buildTeacherCardMarkup(teacher) {
     const typeClass = teacher.type === '专业老师' ? 'is-professional' : 'is-counselor';
-    const actions = state.teacherEditUnlocked
+    const canEdit = isAdmin() || (isTeacher() && state.auth.teacherId === teacher.id);
+    const actions = state.teacherEditUnlocked && canEdit
       ? '<div class="teacher-actions">' +
           '<button class="teacher-action" type="button" data-teacher-action="edit">修改</button>' +
-          '<button class="teacher-action" type="button" data-teacher-action="delete">删除</button>' +
+          (isAdmin() ? '<button class="teacher-action" type="button" data-teacher-action="delete">删除</button>' : '') +
         '</div>'
       : '';
     return (
       '<article class="teacher-card" data-teacher-id="' + escapeHTML(teacher.id) + '">' +
         '<div class="teacher-card-head">' +
           '<span class="teacher-type ' + typeClass + '">' + escapeHTML(teacher.type) + '</span>' +
-          '<span class="teacher-province" title="' + escapeHTML(teacher.province) + '">' + escapeHTML(shortProvince(teacher.province)) + '</span>' +
+          '<span class="teacher-province" title="' + escapeHTML(teacher.province || '待完善') + '">' + escapeHTML(teacher.province ? shortProvince(teacher.province) : '待完善') + '</span>' +
         '</div>' +
         '<h3 class="teacher-name">' + escapeHTML(teacher.name) + '</h3>' +
         '<div class="teacher-signs">' +
@@ -13086,7 +13246,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     dom.teacherEditToggle.setAttribute('aria-pressed', String(unlocked));
     dom.teacherEditLabel.textContent = unlocked ? '退出编辑' : '编辑模式';
     dom.teacherEditToggle.title = unlocked ? '退出页面编辑模式' : '页面编辑模式预设关闭';
-    dom.teacherAddBtn.hidden = !unlocked;
+    dom.teacherAddBtn.hidden = !isAdmin();
     renderTeacherList();
   }
 
@@ -13186,9 +13346,10 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   function syncAuthControls() {
     const authed = Boolean(state.auth);
     const admin = isAdmin();
+    const teacher = isTeacher();
     const own = getOwnMember();
 
-    state.teacherEditUnlocked = admin;
+    state.teacherEditUnlocked = admin || teacher;
 
     if (dom.addMemberBtn) dom.addMemberBtn.hidden = !authed;
     if (dom.addMemberLabel) {
@@ -13377,6 +13538,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function openTeacherForm(teacher) {
     if (!state.teacherEditUnlocked) return;
+    const ownTeacher = isTeacher() ? getOwnTeacher() : null;
+    if (!isAdmin() && (!ownTeacher || !teacher || teacher.id !== ownTeacher.id)) return;
     // 若切换到另一位师资，先保存目前表单的防抖内容。
     if (!dom.teacherForm.hidden) flushTeacherSave();
 
@@ -13384,10 +13547,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     state.teacherEditingId = isNew ? null : teacher.id;
     state.teacherFormDirty = false;
     dom.teacherForm.hidden = false;
-    dom.teacherFormTitle.textContent = isNew ? '新增教师' : '编辑教师';
+    dom.teacherFormTitle.textContent = isNew ? '新增教师' : (isAdmin() ? '编辑教师' : '编辑我的师资资料');
     dom.teacherId.value = isNew ? '' : teacher.id;
     dom.teacherName.value = isNew ? '' : teacher.name;
     dom.teacherType.value = isNew ? TEACHER_TYPES[0] : teacher.type;
+    dom.teacherType.disabled = !isAdmin();
     dom.teacherZodiac.value = isNew ? ZODIACS[0].name : (normalizeZodiac(teacher.zodiac) || ZODIACS[0].name);
     dom.teacherConstellation.value = isNew ? SIGNS[0].name : (normalizeSign(teacher.constellation) || SIGNS[0].name);
     dom.teacherProvince.value = isNew ? PROVINCES[0] : teacher.province;
@@ -13416,6 +13580,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function saveTeacherFromForm() {
     if (dom.teacherForm.hidden || !state.teacherEditUnlocked) return false;
+    if (!isAdmin() && !isTeacher()) return false;
     window.clearTimeout(teacherSaveTimer);
     teacherSaveTimer = 0;
     const data = readTeacherForm();
@@ -13431,6 +13596,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     }
 
     let teacher = dom.teacherId.value ? getTeacherById(dom.teacherId.value) : null;
+    if (!isAdmin()) {
+      if (!teacher || teacher.id !== state.auth.teacherId) {
+        dom.teacherSaveState.textContent = '仅可修改自己的师资资料';
+        dom.teacherSaveState.classList.remove('is-saved');
+        return false;
+      }
+      data.type = teacher.type;
+    }
     if (teacher) {
       teacher.name = data.name;
       teacher.type = data.type;
@@ -13438,7 +13611,9 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       teacher.constellation = data.constellation;
       teacher.province = data.province;
       teacher.remark = data.remark;
+      teacher.incomplete = false;
     } else {
+      if (!isAdmin()) return false;
       teacher = {
         id: uniqueId('t'),
         name: data.name,
@@ -13447,6 +13622,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         constellation: data.constellation,
         province: data.province,
         remark: data.remark,
+        incomplete: false,
         createdAt: Date.now(),
       };
       state.teachers.push(teacher);
@@ -17256,18 +17432,35 @@ function friendlyRemoteError(error) {
   }
   async function pushSelf() {
     var auth = getAuth();
-    if (!auth || auth.role !== 'student' || !auth.studentId) return;
-    var own = null;
-    var members = getMembers();
-    for (var i = 0; i < members.length; i++) {
-      if (String(members[i].studentId || '') === String(auth.studentId)) { own = members[i]; break; }
+    if (!auth) return;
+    if (auth.role === 'student' && auth.studentId) {
+      var own = null;
+      var members = getMembers();
+      for (var i = 0; i < members.length; i++) {
+        if (String(members[i].studentId || '') === String(auth.studentId)) { own = members[i]; break; }
+      }
+      var ret = await rpc('class_member_save_self', {
+        p_token: getToken(),
+        p_member: own
+      });
+      if (ret && ret.updated_at) setMeta(ret.updated_at);
+      lastSignature = signature();
+      return;
     }
-    var ret = await rpc('class_member_save_self', {
-      p_token: getToken(),
-      p_member: own
-    });
-    if (ret && ret.updated_at) setMeta(ret.updated_at);
-    lastSignature = signature();
+    if (auth.role === 'teacher' && auth.teacherId) {
+      var teachers = getTeachers();
+      var ownTeacher = null;
+      for (var j = 0; j < teachers.length; j++) {
+        if (teachers[j].id === auth.teacherId) { ownTeacher = teachers[j]; break; }
+      }
+      if (!ownTeacher) return;
+      var teacherRet = await rpc('class_teacher_save_self', {
+        p_token: getToken(),
+        p_teacher: ownTeacher
+      });
+      if (teacherRet && teacherRet.updated_at) setMeta(teacherRet.updated_at);
+      lastSignature = signature();
+    }
   }
   async function hydrate() {
     var token = getToken();
