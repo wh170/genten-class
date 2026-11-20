@@ -9342,6 +9342,35 @@ html.intro-disabled .totem-background::after {
   .gallery-item,
   .gallery-item img { transition: none; }
 }
+
+/* 教师 / 同窗名录：默认收起，点击展开，避免页面过长 */
+.section-fold {
+  display: inline-flex;
+  align-items: center;
+  gap: .42rem;
+  margin-top: .58rem;
+  padding: .18rem 0;
+  border: 0;
+  background: none;
+  color: #d8b86c;
+  font: inherit;
+  font-size: .74rem;
+  letter-spacing: .12em;
+  cursor: pointer;
+}
+.section-fold:hover { color: #f1dea9; }
+.section-fold-arrow { width: 14px; height: 14px; transition: transform .28s ease; }
+.section-fold[aria-expanded="true"] .section-fold-arrow { transform: rotate(180deg); }
+.teacher-panel.is-collapsed .teacher-toolbar,
+.teacher-panel.is-collapsed .teacher-list,
+.teacher-panel.is-collapsed .teacher-empty,
+.teacher-panel.is-collapsed .teacher-form,
+.teacher-panel.is-collapsed .teacher-edit-status,
+.teacher-panel.is-collapsed .teacher-unlock { display: none !important; }
+.roster-panel.is-collapsed .filter-strip,
+.roster-panel.is-collapsed .member-grid,
+.roster-panel.is-collapsed .member-empty { display: none !important; }
+
 </style>
 <script>
 /* Supabase JS UMD v2 - inlined to avoid CDN blocking */
@@ -10316,7 +10345,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 <!-- ==================================================================
            师资名录：独立资料、独立 localStorage；预设唯读，密码解锁后可编辑
            ================================================================== -->
-      <section class="teacher-panel" id="teachersSection" aria-labelledby="teachersHeading">
+      <section class="teacher-panel is-collapsed" id="teachersSection" aria-labelledby="teachersHeading">
         <div class="teacher-head">
           <div class="teacher-intro">
             <span class="section-number teacher-seal" aria-hidden="true">参</span>
@@ -10324,6 +10353,10 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
               <p class="section-kicker">师者如灯 · 同脉相承</p>
               <h2 class="section-title" id="teachersHeading">教师名录</h2>
               <p class="teacher-subtitle">辅导员、导师与老师的籍贯，也写在这张山河图上。</p>
+              <button class="section-fold" id="teacherFold" type="button" aria-expanded="false" aria-controls="teacherList">
+                <svg class="section-fold-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+                <span>展开教师名录</span>
+              </button>
             </div>
           </div>
           <div class="teacher-tools">
@@ -10392,7 +10425,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
             <!-- ==================================================================
            下：同窗寄语名录
            ================================================================== -->
-      <section class="roster-panel" id="membersSection" aria-labelledby="membersHeading">
+      <section class="roster-panel is-collapsed" id="membersSection" aria-labelledby="membersHeading">
         <div class="roster-head">
           <div class="roster-intro">
             <span class="section-number" aria-hidden="true">肆</span>
@@ -10400,6 +10433,10 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
               <p class="section-kicker">同窗寄语 · 根脉留声</p>
               <h2 class="section-title" id="membersHeading">此间同窗</h2>
               <p class="roster-subtitle">五湖四海，同出一脉。将滑鼠移到成员卡上，或轻触星座标签，可展开星座气泡。</p>
+              <button class="section-fold" id="membersFold" type="button" aria-expanded="false" aria-controls="memberGrid">
+                <svg class="section-fold-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+                <span>展开同窗名录</span>
+              </button>
             </div>
           </div>
 
@@ -19123,5 +19160,42 @@ function friendlyRemoteError(error) {
     });
   })();
   </script>
+
+<script>
+(function () {
+  var defs = [
+    { section: 'teachersSection', button: 'teacherFold', open: '展开教师名录', close: '收起教师名录' },
+    { section: 'membersSection', button: 'membersFold', open: '展开同窗名录', close: '收起同窗名录' }
+  ];
+  var api = {};
+  defs.forEach(function (def) {
+    var section = document.getElementById(def.section);
+    var button = document.getElementById(def.button);
+    if (!section || !button) return;
+    function setExpanded(expanded) {
+      section.classList.toggle('is-collapsed', !expanded);
+      button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      var label = button.querySelector('span');
+      if (label) label.textContent = expanded ? def.close : def.open;
+    }
+    button.addEventListener('click', function () {
+      setExpanded(section.classList.contains('is-collapsed'));
+    });
+    api[def.section] = setExpanded;
+    setExpanded(!section.classList.contains('is-collapsed'));
+  });
+  var expandTeacher = function () { if (api.teachersSection) api.teachersSection(true); };
+  var expandMembers = function () { if (api.membersSection) api.membersSection(true); };
+  ['teacherEditToggle', 'teacherAddBtn'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', expandTeacher, true);
+  });
+  ['addMemberBtn', 'importBtn'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', expandMembers, true);
+  });
+})();
+</script>
+
 </body>
 </html>
