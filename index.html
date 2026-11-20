@@ -8902,6 +8902,21 @@ html.intro-disabled .totem-background::after {
   border-color: rgba(230, 195, 126, .5);
   color: rgba(250, 224, 170, .95);
 }
+
+/* Deck readability: opaque cards; empty cards are desaturated but not translucent. */
+.zodiac-panel .zodiac-card,
+.zodiac-panel .zodiac-card.is-empty,
+.zodiac-panel .zodiac-card:disabled {
+  opacity: 1;
+}
+.zodiac-panel .zodiac-card.is-empty,
+.zodiac-panel .zodiac-card:disabled {
+  filter: grayscale(0.45) saturate(0.55) brightness(0.78);
+}
+.zodiac-panel .zodiac-card.is-empty .zodiac-art,
+.zodiac-panel .zodiac-card:disabled .zodiac-art {
+  opacity: 0.5;
+}
 </style>
 <script>
 /* Supabase JS UMD v2 - inlined to avoid CDN blocking */
@@ -12344,6 +12359,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       const isActive = state.filters.zodiac === zodiacName;
       const isMatched = hasFilters && matchedZodiacs.has(zodiacName) && total > 0;
       const isEmpty = total === 0;
+      card.dataset.count = String(total);
 
       card.disabled = isEmpty;
       card.classList.toggle('is-empty', isEmpty);
@@ -13965,6 +13981,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   // 地图省份 → 生肖牌堆：保留原网格数据与筛选，只切换 3D 牌堆状态。
   let zodiacDeckDraw = null;
+  let zodiacDeckExpanded = false;
 
   function zodiacDrawsForProvince(province) {
     return ZODIACS.filter(function (zodiac) {
@@ -13975,6 +13992,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   }
 
   function zodiacDeckState() {
+    if (zodiacDeckExpanded) return ZODIACS.map(function (zodiac) { return zodiac.name; });
     if (zodiacDeckDraw && zodiacDeckDraw.length) return zodiacDeckDraw;
     return state.filters.zodiac ? [state.filters.zodiac] : [];
   }
@@ -13984,19 +14002,30 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     const selected = zodiacDeckState();
     const selectedSet = new Set(selected);
     const cards = $$('.zodiac-card', dom.zodiacGrid);
+    const orderedCards = selected.length ? cards : cards.slice().sort(function (a, b) {
+      const countDiff = Number(b.dataset.count || 0) - Number(a.dataset.count || 0);
+      if (countDiff) return countDiff;
+      return ZODIACS.findIndex(function (z) { return z.name === a.dataset.zodiac; }) - ZODIACS.findIndex(function (z) { return z.name === b.dataset.zodiac; });
+    });
     const n = selected.length;
     const compact = window.matchMedia('(max-width: 760px)').matches;
-    const cols = n > 6 ? (compact ? 4 : 6) : Math.max(n, 1);
+    // 展开时按 4×3 排列，避免 6 张挤在一行而互相覆盖。
+    let cols = 1;
+    if (n > 1) {
+      if (n <= 3) cols = n;
+      else if (n === 4) cols = 2;
+      else if (n <= 6) cols = 3;
+      else cols = 4;
+    }
     const rows = Math.ceil(Math.max(n, 1) / cols);
     const stageWidth = dom.zodiacGrid.clientWidth || 340;
-    const scale = n <= 1 ? 1.26 : n === 2 ? 1.08 : n === 3 ? 0.9 : n <= 6 ? 0.8 : 0.62;
+    const scale = n <= 1 ? 1.26 : n === 2 ? 1.08 : n === 3 ? 0.9 : n <= 4 ? 0.78 : n <= 6 ? 0.66 : 0.52;
     const cardW = 140 * scale;
-    const maxWidth = Math.max(160, Math.min(stageWidth - 14, 340));
-    const colCount = Math.min(cols, Math.max(n, 1));
-    const gap = n > 1 ? Math.min(compact ? 106 : 118, (maxWidth - cardW) / Math.max(1, colCount - 1)) : 0;
-    const rowStep = compact ? 88 : 104;
+    const maxWidth = Math.max(160, Math.min(stageWidth - 12, 340));
+    const gap = n > 1 ? (maxWidth - cardW) / Math.max(1, cols - 1) : 0;
+    const rowStep = 190 * scale + (compact ? 8 : 12);
 
-    cards.forEach(function (card, index) {
+    orderedCards.forEach(function (card, index) {
       card.style.setProperty('--index', String(index));
       const name = card.dataset.zodiac;
       const drawn = selectedSet.has(name);
@@ -14024,12 +14053,15 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       card.style.setProperty('--draw-scale', scale.toFixed(2));
     });
     dom.zodiacGrid.classList.toggle('has-drawn', n > 0);
+    dom.zodiacGrid.classList.toggle('is-expanded', zodiacDeckExpanded);
   }
 
   function closeZodiacDraw() {
     zodiacDeckDraw = null;
+    zodiacDeckExpanded = false;
     if (!dom.zodiacGrid) return;
     dom.zodiacGrid.classList.remove('has-drawn');
+    dom.zodiacGrid.classList.remove('is-expanded');
     $$('.zodiac-card', dom.zodiacGrid).forEach(function (card) {
       card.classList.remove('is-drawn');
       ['--draw-x', '--draw-y', '--draw-r', '--draw-ry', '--draw-z', '--draw-tz', '--draw-scale'].forEach(function (key) {
@@ -14038,8 +14070,16 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     });
   }
 
+  function expandZodiacDeck() {
+    if (!dom.zodiacGrid) return;
+    zodiacDeckDraw = null;
+    zodiacDeckExpanded = true;
+    renderZodiacDeck();
+  }
+
   function openZodiacDraw(province) {
     if (!province || !dom.zodiacGrid) return;
+    zodiacDeckExpanded = false;
     const zodiacs = zodiacDrawsForProvince(province);
     if (!zodiacs.length) {
       closeZodiacDraw();
@@ -14836,8 +14876,19 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     // 十二生肖：主筛选
     dom.zodiacGrid.addEventListener('click', function (event) {
       const card = event.target.closest('.zodiac-card');
-      if (!card || card.disabled) return;
+      const canExpand = !zodiacDeckExpanded && !zodiacDeckDraw && !state.filters.zodiac;
+      if (!card) {
+        if (canExpand) expandZodiacDeck();
+        return;
+      }
+      if (canExpand) {
+        Sound.playBronzeBell();
+        expandZodiacDeck();
+        return;
+      }
+      if (card.disabled) return;
       Sound.playBronzeBell();
+      zodiacDeckExpanded = false;
       applyZodiacFilter(card.dataset.zodiac);
     });
     if (dom.zodiacDrawClose) {
