@@ -8879,6 +8879,18 @@ html.intro-disabled .totem-background::after {
     rotateZ(var(--draw-r, 0)) rotateX(6deg) rotateY(var(--draw-ry, 0))
     scale(calc(var(--draw-scale, 1.2) + 0.035));
 }
+
+/* 展開時使用平面 4×3：取消 3D 旋轉、深度與傾斜，讓所有卡牌互不穿插。 */
+.zodiac-panel .zodiac-grid.is-expanded .zodiac-card.is-drawn,
+.zodiac-panel .zodiac-grid.is-expanded .zodiac-card.is-drawn:hover {
+  z-index: 1 !important;
+  transform: translate(var(--draw-x, 0), var(--draw-y, -20px)) scale(var(--draw-scale, 1));
+  transform-origin: 50% 50%;
+}
+.zodiac-panel .zodiac-grid.is-expanded .zodiac-card.is-drawn:hover {
+  z-index: 2 !important;
+  filter: brightness(1.08);
+}
 .zodiac-panel .zodiac-grid .zodiac-card:focus-visible { outline: 1px solid var(--gold-300); outline-offset: 3px; z-index: 120; }
 @media (max-width: 760px) {
   .zodiac-panel .zodiac-grid { min-height: 420px; }
