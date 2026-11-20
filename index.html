@@ -10168,6 +10168,21 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
 }
 
 </style>
+<style id="tree-base-cleanup">
+
+/* 古槐底部：移除遗留深色遮罩，让树根自然融入纸面 */
+.tree-panel .tree-visual .new-tree-container::after,
+.new-tree-container::after {
+  display: none !important;
+  background: none !important;
+  content: none !important;
+}
+.tree-panel .tree-visual .new-tree-img {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 80%, rgba(0,0,0,.55) 92%, transparent 100%) !important;
+  mask-image: linear-gradient(to bottom, #000 0%, #000 80%, rgba(0,0,0,.55) 92%, transparent 100%) !important;
+}
+
+</style>
 </head>
 
 <body>
