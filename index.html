@@ -10291,6 +10291,51 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
 .logout-button { flex: 0 0 auto; }
 
 </style>
+<style id="gua-label-contrast">
+
+/* 八卦卦名：浅色底上去掉厚重黑描边，改为米白描边+深松绿字身 */
+.map-taiji-labels {
+  filter: none !important;
+  opacity: .96 !important;
+}
+.taiji-gua-label,
+.map-taiji-labels text {
+  fill: #1f4a32 !important;
+  stroke: none !important;
+  font-size: 30px !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+.map-stage:hover .taiji-gua-label,
+.map-stage:hover .map-taiji-labels text,
+.map-stage:active .taiji-gua-label,
+.map-stage:active .map-taiji-labels text,
+.map-stage.is-province-hover .taiji-gua-label,
+.map-stage.is-province-hover .map-taiji-labels text {
+  fill: #183f2b !important;
+}
+
+</style>
+<style id="gua-label-upright">
+
+/* 卦名随盘转动，但字身反向自转保持正向可读 */
+.taiji-gua-label,
+.map-taiji-labels text {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: guaLabelUpright 60s linear infinite;
+  will-change: transform;
+}
+@keyframes guaLabelUpright {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .taiji-gua-label,
+  .map-taiji-labels text { animation: none !important; }
+}
+
+</style>
 </head>
 
 <body>
