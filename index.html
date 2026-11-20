@@ -11022,9 +11022,8 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   const TEACHER_TYPES = ['辅导员', '导师', '专业老师'];
   const TEACHER_SEED_ROWS = [];
   const VIRTUAL_SEED_TEACHER_NAMES = ['李慧兰', '王砚秋', '陈守一'];
-  // 一次性清理：旧测试阶段留在浏览器里的两位教师，避免手机端继续显示。
+  // 旧测试阶段留在浏览器里的教师：每次载入都过滤，避免远端同步后再次出现。
   const LEGACY_TEST_TEACHER_NAMES = ['22'];
-  const LEGACY_TEST_TEACHER_CLEANUP_KEY = 'ming-legacy-test-teachers-v1';
 
   // 旧版师资资料没有生肖／星座。读取时以姓名稳定补值；示例师资沿用上方设定。
   function pickTeacherFieldFallback(list, name, salt) {
@@ -11738,6 +11737,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       province: province,
       remark: remark,
       incomplete: incomplete,
+      seeded: raw.seeded === true,
       createdAt: Number.isFinite(createdAtRaw) && createdAtRaw > 0 ? createdAtRaw : Date.now(),
     };
   }
@@ -11766,19 +11766,16 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     if (raw === null) {
       const seed = buildSeedTeachers();
       storageSet(STORAGE_KEYS.teachers, JSON.stringify(seed));
-      storageSet(LEGACY_TEST_TEACHER_CLEANUP_KEY, '1');
       return seed;
     }
     try {
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) throw new Error('格式不是阵列');
       const virtualNames = new Set(VIRTUAL_SEED_TEACHER_NAMES);
-      const cleanupNeeded = storageGet(LEGACY_TEST_TEACHER_CLEANUP_KEY) !== '1';
       const filtered = parsed.filter(function (item) {
-        if (cleanupNeeded && isLegacyTestTeacher(item)) return false;
+        if (isLegacyTestTeacher(item)) return false;
         return !virtualNames.has(cleanName(item && item.name));
       });
-      if (cleanupNeeded) storageSet(LEGACY_TEST_TEACHER_CLEANUP_KEY, '1');
       const removedSeeds = parsed.length - filtered.length;
       const normalized = filtered.map(createTeacherFromRaw).filter(Boolean);
       const needsMigration = filtered.some(function (item) {
