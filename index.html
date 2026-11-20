@@ -10526,20 +10526,41 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center 42%;
-  filter: saturate(0.9) contrast(0.97) sepia(0.03);
+  background: #fbf8ef;
+  filter: saturate(0.95) contrast(0.98) sepia(0.03);
   mix-blend-mode: multiply;
-  opacity: 0.97;
-  transform: scale(1.015);
+  opacity: 0.98;
+  transform: none;
   transition: transform 0.8s var(--ease-slow), filter 0.5s var(--ease);
 }
 
-.zodiac-card:hover:not(:disabled) .zodiac-photo { transform: scale(1.045); filter: saturate(0.96) contrast(0.99) sepia(0.02); }
+.zodiac-card:hover:not(:disabled) .zodiac-photo { transform: scale(1.02); filter: saturate(0.99) contrast(1) sepia(0.02); }
 .zodiac-card.is-empty,
 .zodiac-card:disabled { opacity: 0.9 !important; }
 .zodiac-card.is-empty .zodiac-photo,
 .zodiac-card:disabled .zodiac-photo { filter: grayscale(0.08) saturate(0.9) opacity(0.96); }
+
+/* 有成员的生肖：柔和的暖金高亮，不压住照片与文字 */
+.zodiac-panel .zodiac-grid .zodiac-card:not(.is-empty),
+.zodiac-card:not(.is-empty) {
+  border-color: rgba(184, 139, 66, 0.58) !important;
+  box-shadow: 0 0 0 1px rgba(184, 139, 66, 0.22), 0 6px 18px rgba(170, 120, 43, 0.18), inset 0 0 24px rgba(255, 214, 140, 0.16) !important;
+}
+.zodiac-panel .zodiac-grid .zodiac-card:not(.is-empty):hover,
+.zodiac-card:not(.is-empty):hover {
+  box-shadow: 0 0 0 1px rgba(184, 139, 66, 0.36), 0 9px 24px rgba(170, 120, 43, 0.24), inset 0 0 30px rgba(255, 214, 140, 0.22) !important;
+}
+.zodiac-card:not(.is-empty) .zodiac-photo {
+  filter: saturate(1.06) contrast(1.02) sepia(0.05) brightness(1.02) !important;
+}
+.zodiac-card:not(.is-empty) .zodiac-foot {
+  background: linear-gradient(to top, rgba(255, 249, 233, 0.99) 0%, rgba(255, 246, 224, 0.96) 34%, rgba(255, 246, 224, 0.62) 67%, rgba(255, 246, 224, 0) 100%) !important;
+}
+.zodiac-card:not(.is-empty) .zodiac-foot strong {
+  color: #163d2a !important;
+}
 
 .zodiac-card .zodiac-foot {
   z-index: 5;
