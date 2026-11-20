@@ -8973,6 +8973,25 @@ html.intro-disabled .totem-background::after {
 .zodiac-people-tip__names { color: rgba(241, 229, 205, 0.94); overflow-wrap: anywhere; }
 .zodiac-people-tip__empty { color: rgba(235, 218, 185, 0.55); }
 
+
+/* 省份提示：显示同省同窗姓名 */
+.map-tooltip-student-names {
+  display: flex;
+  gap: 7px;
+  margin-top: 2px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(224, 190, 129, 0.13);
+  color: rgba(241, 227, 198, 0.94);
+  font-size: 10.5px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.map-tooltip-student-names > span:first-child {
+  flex: none;
+  color: rgba(214, 180, 113, 0.72);
+  letter-spacing: .08em;
+}
+
 </style>
 <script>
 /* Supabase JS UMD v2 - inlined to avoid CDN blocking */
@@ -13858,7 +13877,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     return map;
   }
 
-  function mapTooltipFormatter(params, counts, teacherMap) {
+  function mapTooltipFormatter(params, counts, teacherMap, studentsByProvince) {
     const rawName = params && params.name ? params.name : '';
     if (!rawName) return '';
     const fullName = normalizeProvince(rawName);
@@ -13880,6 +13899,14 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       parts.push(
         '<div class="map-tooltip-students"><span>同窗</span><b>' + studentCount + '</b><span>位</span></div>'
       );
+      const provinceStudents = fullName && studentsByProvince ? studentsByProvince[fullName] || [] : [];
+      if (provinceStudents.length) {
+        parts.push(
+          '<div class="map-tooltip-student-names"><span>同乡</span><span>' +
+            provinceStudents.map(function (member) { return escapeHTML(member.name); }).join('、') +
+          '</span></div>'
+        );
+      }
     }
 
     if (showTeachers) {
@@ -13916,6 +13943,13 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   function buildMapOption(filtered) {
     const counts = getProvinceCounts(filtered);
     const teacherMap = getTeachersByProvince();
+    const studentsByProvince = {};
+    filtered.forEach(function (member) {
+      const province = normalizeProvince(member.province);
+      if (!province) return;
+      if (!studentsByProvince[province]) studentsByProvince[province] = [];
+      studentsByProvince[province].push(member);
+    });
     const compact = window.innerWidth <= 760;
     const scope = getMapScope();
     const showStudents = scope !== 'teachers';
@@ -14030,7 +14064,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         extraCssText:
           'border-radius:2px;box-shadow:0 12px 30px rgba(0,0,0,.38);backdrop-filter:blur(6px);max-width:min(72vw,270px);white-space:normal;',
         formatter: function (params) {
-          return mapTooltipFormatter(params, counts, teacherMap);
+          return mapTooltipFormatter(params, counts, teacherMap, studentsByProvince);
         },
       },
       series: [
