@@ -8917,6 +8917,50 @@ html.intro-disabled .totem-background::after {
 .zodiac-panel .zodiac-card:disabled .zodiac-art {
   opacity: 0.5;
 }
+
+/* 群星角標：滑鼠停留時顯示具體人名 */
+.zodiac-sign-corner.multi-sign { cursor: help; pointer-events: auto; }
+.zodiac-people-tip {
+  position: fixed;
+  z-index: 140;
+  max-width: min(280px, calc(100vw - 24px));
+  max-height: 240px;
+  overflow: auto;
+  padding: 11px 13px 10px;
+  border: 1px solid rgba(214, 180, 113, 0.45);
+  border-radius: 4px;
+  background:
+    linear-gradient(145deg, rgba(30, 21, 14, 0.98), rgba(12, 9, 6, 0.98));
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 226, 168, 0.05);
+  color: rgba(235, 218, 185, 0.92);
+  font-size: 11px;
+  line-height: 1.65;
+  letter-spacing: 0.03em;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity .16s ease, transform .16s ease, visibility .16s;
+}
+.zodiac-people-tip.is-visible { opacity: 1; visibility: visible; transform: translateY(0); }
+.zodiac-people-tip__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(214, 180, 113, 0.18);
+  color: var(--gold-300);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+.zodiac-people-tip__head b { font-weight: 500; color: rgba(235, 218, 185, 0.62); }
+.zodiac-people-tip__group { display: flex; gap: 8px; margin-top: 4px; }
+.zodiac-people-tip__sign { flex: none; min-width: 42px; color: rgba(214, 180, 113, 0.72); }
+.zodiac-people-tip__names { color: rgba(241, 229, 205, 0.94); overflow-wrap: anywhere; }
+.zodiac-people-tip__empty { color: rgba(235, 218, 185, 0.55); }
+
 </style>
 <script>
 /* Supabase JS UMD v2 - inlined to avoid CDN blocking */
@@ -12344,6 +12388,73 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     return getSign(bestName) || getSign(zodiac.defaultSign) || SIGNS[0];
   }
 
+  let zodiacPeopleTipEl = null;
+
+  function hideZodiacPeopleTip() {
+    if (!zodiacPeopleTipEl) return;
+    zodiacPeopleTipEl.classList.remove('is-visible');
+    zodiacPeopleTipEl.setAttribute('aria-hidden', 'true');
+  }
+
+  function positionZodiacPeopleTip(badge) {
+    if (!zodiacPeopleTipEl || !badge) return;
+    const rect = badge.getBoundingClientRect();
+    const tipW = zodiacPeopleTipEl.offsetWidth;
+    const tipH = zodiacPeopleTipEl.offsetHeight;
+    const margin = 8;
+    let left = rect.left + rect.width / 2 - tipW / 2;
+    left = Math.max(margin, Math.min(left, window.innerWidth - tipW - margin));
+    let top = rect.bottom + 8;
+    if (top + tipH > window.innerHeight - margin) top = rect.top - tipH - 8;
+    top = Math.max(margin, top);
+    zodiacPeopleTipEl.style.left = Math.round(left) + 'px';
+    zodiacPeopleTipEl.style.top = Math.round(top) + 'px';
+  }
+
+  function showZodiacPeopleTip(badge) {
+    if (!badge || !badge._zodiacPeople || !badge._zodiacPeople.length) return;
+    if (!zodiacPeopleTipEl) {
+      zodiacPeopleTipEl = document.createElement('div');
+      zodiacPeopleTipEl.className = 'zodiac-people-tip';
+      zodiacPeopleTipEl.setAttribute('role', 'tooltip');
+      zodiacPeopleTipEl.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(zodiacPeopleTipEl);
+    }
+    const people = badge._zodiacPeople;
+    const groups = new Map();
+    people.forEach(function (person) {
+      const key = person.constellation || '未填星座';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(person.name);
+    });
+    zodiacPeopleTipEl.textContent = '';
+    const head = document.createElement('div');
+    head.className = 'zodiac-people-tip__head';
+    const title = document.createElement('span');
+    title.textContent = '✨ 群星名錄';
+    const count = document.createElement('b');
+    count.textContent = people.length + ' 人';
+    head.appendChild(title);
+    head.appendChild(count);
+    zodiacPeopleTipEl.appendChild(head);
+    groups.forEach(function (names, sign) {
+      const row = document.createElement('div');
+      row.className = 'zodiac-people-tip__group';
+      const signNode = document.createElement('span');
+      signNode.className = 'zodiac-people-tip__sign';
+      signNode.textContent = sign;
+      const namesNode = document.createElement('span');
+      namesNode.className = 'zodiac-people-tip__names';
+      namesNode.textContent = names.join('、');
+      row.appendChild(signNode);
+      row.appendChild(namesNode);
+      zodiacPeopleTipEl.appendChild(row);
+    });
+    zodiacPeopleTipEl.setAttribute('aria-hidden', 'false');
+    zodiacPeopleTipEl.classList.add('is-visible');
+    positionZodiacPeopleTip(badge);
+  }
+
   function syncZodiacCards(filtered) {
     const statsPeople = getStatsPeople();
     const counts = getZodiacCounts(statsPeople);
@@ -12385,8 +12496,17 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       const symbolNode = $('[data-zodiac-sign-symbol]', card);
       const textNode = $('[data-zodiac-sign-text]', card);
       if (cornerNode) {
-        cornerNode.classList.toggle('multi-sign', uniqueConstellations.length > 1);
+        const multiSign = uniqueConstellations.length > 1;
+        cornerNode.classList.toggle('multi-sign', multiSign);
         cornerNode.classList.toggle('is-empty-sign', uniqueConstellations.length === 0);
+        cornerNode._zodiacPeople = multiSign ? peopleList.map(function (member) {
+          return { name: member.name, constellation: String(member.constellation || '').trim() };
+        }) : null;
+        if (multiSign) {
+          cornerNode.setAttribute('aria-label', '群星，共 ' + peopleList.length + ' 人：' + peopleList.map(function (member) { return member.name; }).join('、'));
+        } else {
+          cornerNode.removeAttribute('aria-label');
+        }
       }
       if (uniqueConstellations.length === 0) {
         if (symbolNode) symbolNode.textContent = '☆';
@@ -13999,6 +14119,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 
   function renderZodiacDeck() {
     if (!dom.zodiacGrid) return;
+    hideZodiacPeopleTip();
     const selected = zodiacDeckState();
     const selectedSet = new Set(selected);
     const cards = $$('.zodiac-card', dom.zodiacGrid);
@@ -14059,6 +14180,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   function closeZodiacDraw() {
     zodiacDeckDraw = null;
     zodiacDeckExpanded = false;
+    hideZodiacPeopleTip();
     if (!dom.zodiacGrid) return;
     dom.zodiacGrid.classList.remove('has-drawn');
     dom.zodiacGrid.classList.remove('is-expanded');
@@ -14891,6 +15013,31 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       zodiacDeckExpanded = false;
       applyZodiacFilter(card.dataset.zodiac);
     });
+    if (dom.zodiacGrid) {
+      dom.zodiacGrid.addEventListener('pointerover', function (event) {
+        const badge = event.target.closest && event.target.closest('.zodiac-sign-corner.multi-sign');
+        if (badge) showZodiacPeopleTip(badge);
+      });
+      dom.zodiacGrid.addEventListener('pointerout', function (event) {
+        const badge = event.target.closest && event.target.closest('.zodiac-sign-corner.multi-sign');
+        if (!badge) return;
+        if (event.relatedTarget && badge.contains(event.relatedTarget)) return;
+        hideZodiacPeopleTip();
+      });
+      dom.zodiacGrid.addEventListener('click', function (event) {
+        const badge = event.target.closest && event.target.closest('.zodiac-sign-corner.multi-sign');
+        if (!badge) return;
+        event.preventDefault();
+        event.stopPropagation();
+        showZodiacPeopleTip(badge);
+      }, true);
+      document.addEventListener('pointerdown', function (event) {
+        if (!event.target.closest || event.target.closest('.zodiac-people-tip') || event.target.closest('.zodiac-sign-corner.multi-sign')) return;
+        hideZodiacPeopleTip();
+      }, true);
+      window.addEventListener('scroll', hideZodiacPeopleTip, true);
+      window.addEventListener('resize', hideZodiacPeopleTip);
+    }
     if (dom.zodiacDrawClose) {
       dom.zodiacDrawClose.addEventListener('click', closeZodiacDraw);
     }
