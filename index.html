@@ -10464,6 +10464,47 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
 .class-overview-status.is-loading { color: #7b8b7d !important; }
 
 </style>
+<style id="online-list-style">
+
+/* 在线名单：人数公开，名单仅 wh180 可见 */
+.header-online.is-owner-clickable { cursor: pointer; text-decoration: underline dotted rgba(70,99,75,.55); text-underline-offset: 4px; }
+.online-list-modal {
+  position: fixed; inset: 0; z-index: 13000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; background: rgba(24, 38, 28, .34);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.online-list-modal[hidden] { display: none; }
+.online-list-card {
+  width: min(520px, 92vw); max-height: min(72vh, 680px);
+  display: flex; flex-direction: column; overflow: hidden;
+  border: 1px solid rgba(70, 99, 75, .18); border-radius: 20px;
+  background: #fffdf7; box-shadow: 0 22px 60px rgba(35, 55, 40, .18);
+  color: #264a35;
+}
+.online-list-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 22px 24px 14px; border-bottom: 1px solid rgba(70,99,75,.1); }
+.online-list-head h3 { margin: 0; color: #264a35; font-size: 22px; font-weight: 600; letter-spacing: .08em; }
+.online-list-head p { margin: 6px 0 0; color: #7b8b7d; font-size: 11px; letter-spacing: .04em; }
+.online-list-close { flex: none; width: 32px; height: 32px; border: 1px solid rgba(70,99,75,.22); border-radius: 50%; background: transparent; color: #5f7063; font-size: 18px; line-height: 1; cursor: pointer; }
+.online-list-close:hover { background: #f4efe2; color: #264a35; }
+.online-list-summary { padding: 14px 24px 6px; color: #5f7063; font-size: 12px; letter-spacing: .04em; }
+.online-list-body { overflow-y: auto; padding: 4px 24px 22px; }
+.online-list-empty { margin: 18px 0; padding: 30px 12px; border: 1px dashed rgba(70,99,75,.2); border-radius: 12px; color: #7b8b7d; text-align: center; font-size: 12px; }
+.online-person { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 0; border-bottom: 1px solid rgba(70,99,75,.09); }
+.online-person:last-child { border-bottom: 0; }
+.online-person-main { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.online-person-name { color: #264a35; font-size: 15px; font-weight: 600; letter-spacing: .04em; }
+.online-person-role { padding: 2px 7px; border: 1px solid rgba(70,99,75,.18); border-radius: 999px; color: #6b7d6f; font-size: 10px; white-space: nowrap; }
+.online-person-time { flex: none; color: #8a948b; font-size: 10px; letter-spacing: .03em; }
+@media (max-width: 560px) {
+  .online-list-modal { padding: 12px; align-items: flex-end; }
+  .online-list-card { width: 100%; max-height: 78vh; border-radius: 18px; }
+  .online-list-head { padding: 18px 18px 12px; }
+  .online-list-head h3 { font-size: 19px; }
+  .online-list-summary, .online-list-body { padding-left: 18px; padding-right: 18px; }
+}
+
+</style>
 </head>
 
 <body>
@@ -20214,7 +20255,22 @@ function friendlyRemoteError(error) {
     }
   })();
   </script>
-  <script id="online-presence-script">
+  
+<div class="online-list-modal" id="onlineListModal" hidden>
+  <div class="online-list-card" role="dialog" aria-modal="true" aria-labelledby="onlineListTitle">
+    <div class="online-list-head">
+      <div>
+        <h3 id="onlineListTitle">当前在线名单</h3>
+        <p>120 秒内有活动即视为在线</p>
+      </div>
+      <button class="online-list-close" id="onlineListClose" type="button" aria-label="关闭在线名单">×</button>
+    </div>
+    <div class="online-list-summary" id="onlineListSummary">正在读取…</div>
+    <div class="online-list-body" id="onlineListBody"></div>
+  </div>
+</div>
+
+<script id="online-presence-script">
   (function () {
     'use strict';
 
@@ -20222,12 +20278,21 @@ function friendlyRemoteError(error) {
     var SUPABASE_KEY = 'sb_publishable_tPnlZdhrpeg4TQ1lsdjp3A_WDep2zhC';
     var CHANNEL_NAME = 'ming-online-presence-v1';
     var VISITOR_KEY = 'ming-online-visitor-v1';
+    var TOKEN_KEY = 'hongtong-bighuai-class-v1:auth-token';
+    var OWNER_ID = 'wh180';
+    var ONLINE_WINDOW_MS = 120000;
+
     var nodes = [];
     var counts = [];
     var client = null;
     var channel = null;
     var tracked = false;
     var started = false;
+    var serverCount = false;
+    var owner = false;
+    var modal = null;
+    var listBody = null;
+    var listSummary = null;
 
     function makeVisitorId() {
       try {
@@ -20251,17 +20316,19 @@ function friendlyRemoteError(error) {
       }
     }
 
+    function getToken() {
+      try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (error) { return ''; }
+    }
+
     function hideOnline() {
       for (var i = 0; i < nodes.length; i += 1) nodes[i].hidden = true;
     }
 
     function showOnline(count) {
-      if (!(count > 0)) {
-        hideOnline();
-        return;
-      }
+      var n = Number(count);
+      if (!isFinite(n) || n < 0) return;
       for (var i = 0; i < nodes.length; i += 1) nodes[i].hidden = false;
-      for (var j = 0; j < counts.length; j += 1) counts[j].textContent = String(count);
+      for (var j = 0; j < counts.length; j += 1) counts[j].textContent = String(Math.max(0, Math.round(n)));
     }
 
     function countPresence() {
@@ -20279,7 +20346,8 @@ function friendlyRemoteError(error) {
       }
     }
 
-    function syncOnline() {
+    function syncPresence() {
+      if (serverCount) return;
       if (tracked) showOnline(Math.max(1, countPresence()));
     }
 
@@ -20303,7 +20371,8 @@ function friendlyRemoteError(error) {
       });
     }
 
-    function startChannel() {
+    function ensureClient() {
+      if (client || !window.supabase || typeof window.supabase.createClient !== 'function') return client;
       try {
         client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
           auth: {
@@ -20315,6 +20384,18 @@ function friendlyRemoteError(error) {
             params: { eventsPerSecond: 2 }
           }
         });
+      } catch (error) {
+        client = null;
+      }
+      return client;
+    }
+
+    function startChannel() {
+      if (!ensureClient()) {
+        hideOnline();
+        return;
+      }
+      try {
         channel = client.channel(CHANNEL_NAME, {
           config: { presence: { key: visitorId() } }
         });
@@ -20323,21 +20404,206 @@ function friendlyRemoteError(error) {
         return;
       }
 
-      channel.on('presence', { event: 'sync' }, syncOnline);
-      channel.on('presence', { event: 'join' }, syncOnline);
-      channel.on('presence', { event: 'leave' }, syncOnline);
+      channel.on('presence', { event: 'sync' }, syncPresence);
+      channel.on('presence', { event: 'join' }, syncPresence);
+      channel.on('presence', { event: 'leave' }, syncPresence);
 
       channel.subscribe(function (status) {
         if (status === 'SUBSCRIBED') {
           channel.track({ at: Date.now() }).then(function () {
             tracked = true;
-            showOnline(Math.max(1, countPresence()));
+            syncPresence();
           }).catch(function () {
-            hideOnline();
+            if (!serverCount) hideOnline();
           });
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          if (!tracked) hideOnline();
+        } else if ((status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') && !serverCount) {
+          hideOnline();
         }
+      });
+    }
+
+    function setOwner(value) {
+      owner = Boolean(value);
+      var header = document.querySelector('.header-online');
+      if (header) {
+        header.classList.toggle('is-owner-clickable', owner);
+        if (owner) {
+          header.setAttribute('role', 'button');
+          header.setAttribute('tabindex', '0');
+          header.setAttribute('title', '查看在线名单');
+        } else {
+          header.removeAttribute('role');
+          header.removeAttribute('tabindex');
+          header.removeAttribute('title');
+        }
+      }
+      if (!owner && modal && !modal.hidden) closeOnlineList();
+    }
+
+    async function refreshCount() {
+      if (!client) {
+        syncPresence();
+        return;
+      }
+      try {
+        var res = await client.rpc('class_online_count');
+        if (!res.error && (typeof res.data === 'number' || /^\d+$/.test(String(res.data)))) {
+          serverCount = true;
+          showOnline(Number(res.data));
+          return;
+        }
+      } catch (error) { /* fall through to presence */ }
+      serverCount = false;
+      syncPresence();
+    }
+
+    async function sessionTick() {
+      var token = getToken();
+      if (!client) {
+        await refreshCount();
+        return;
+      }
+      if (!token) {
+        setOwner(false);
+        await refreshCount();
+        return;
+      }
+      try {
+        var res = await client.rpc('class_session_check', { p_token: token });
+        if (!res.error && res.data && res.data.ok) {
+          setOwner(String(res.data.student_id || '').toLowerCase() === OWNER_ID);
+        } else {
+          setOwner(false);
+        }
+      } catch (error) {
+        setOwner(false);
+      }
+      await refreshCount();
+      if (owner && modal && !modal.hidden) loadOnlineList();
+    }
+
+    function formatAgo(value) {
+      var time = new Date(value).getTime();
+      if (!isFinite(time)) return '';
+      var seconds = Math.max(0, Math.round((Date.now() - time) / 1000));
+      if (seconds < 15) return '刚刚在线';
+      if (seconds < 60) return seconds + ' 秒前';
+      return Math.round(seconds / 60) + ' 分钟前';
+    }
+
+    function roleLabel(item) {
+      var role = String(item.role || '');
+      if (role === '管理员' || role === 'admin') return '管理员';
+      if (item.teacher_type) return String(item.teacher_type);
+      if (role === 'teacher') return '教师';
+      if (role === '学生' || role === 'student') return '学生';
+      return role || '学生';
+    }
+
+    function renderOnlineList(data) {
+      var people = data && Array.isArray(data.online) ? data.online : [];
+      if (!modal || !listBody || !listSummary) return;
+      listSummary.textContent = '当前在线 ' + people.length + ' 人';
+      listBody.textContent = '';
+      if (!people.length) {
+        var empty = document.createElement('p');
+        empty.className = 'online-list-empty';
+        empty.textContent = '暂无在线名单。';
+        listBody.appendChild(empty);
+        return;
+      }
+      people.forEach(function (item) {
+        var row = document.createElement('div');
+        row.className = 'online-person';
+
+        var main = document.createElement('div');
+        main.className = 'online-person-main';
+
+        var name = document.createElement('span');
+        name.className = 'online-person-name';
+        name.textContent = item.name || '未命名';
+        main.appendChild(name);
+
+        var role = document.createElement('span');
+        role.className = 'online-person-role';
+        role.textContent = roleLabel(item);
+        main.appendChild(role);
+
+        var time = document.createElement('span');
+        time.className = 'online-person-time';
+        time.textContent = formatAgo(item.last_seen);
+        row.appendChild(main);
+        row.appendChild(time);
+        listBody.appendChild(row);
+      });
+    }
+
+    async function loadOnlineList() {
+      if (!owner || !modal || !listBody || !listSummary) return;
+      var token = getToken();
+      if (!token || !client) {
+        listSummary.textContent = '在线名单不可用';
+        listBody.textContent = '';
+        return;
+      }
+      listSummary.textContent = '正在读取…';
+      listBody.textContent = '';
+      try {
+        var res = await client.rpc('class_online_list', { p_token: token });
+        if (res.error || !res.data || !res.data.ok) {
+          listSummary.textContent = '在线名单不可用';
+          var error = document.createElement('p');
+          error.className = 'online-list-empty';
+          error.textContent = (res.data && res.data.error) || '请确认已执行在线名单 SQL。';
+          listBody.appendChild(error);
+          return;
+        }
+        renderOnlineList(res.data);
+      } catch (error) {
+        listSummary.textContent = '在线名单读取失败';
+        var failed = document.createElement('p');
+        failed.className = 'online-list-empty';
+        failed.textContent = '请稍后重试。';
+        listBody.appendChild(failed);
+      }
+    }
+
+    function openOnlineList() {
+      if (!owner || !modal) return;
+      modal.hidden = false;
+      loadOnlineList();
+    }
+
+    function closeOnlineList() {
+      if (modal) modal.hidden = true;
+    }
+
+    function initDom() {
+      modal = document.getElementById('onlineListModal');
+      listBody = document.getElementById('onlineListBody');
+      listSummary = document.getElementById('onlineListSummary');
+      var close = document.getElementById('onlineListClose');
+      if (close) close.addEventListener('click', closeOnlineList);
+      if (modal) {
+        modal.addEventListener('click', function (event) {
+          if (event.target === modal) closeOnlineList();
+        });
+      }
+      var header = document.querySelector('.header-online');
+      if (header) {
+        header.addEventListener('click', function () {
+          if (owner) openOnlineList();
+        });
+        header.addEventListener('keydown', function (event) {
+          if (!owner) return;
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openOnlineList();
+          }
+        });
+      }
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && modal && !modal.hidden) closeOnlineList();
       });
     }
 
@@ -20347,17 +20613,21 @@ function friendlyRemoteError(error) {
       nodes = Array.prototype.slice.call(document.querySelectorAll('[data-online]'));
       counts = Array.prototype.slice.call(document.querySelectorAll('[data-online-count]'));
       if (!nodes.length) return;
+      initDom();
 
       loadSdk().then(function (ok) {
         if (!ok) {
           hideOnline();
           return;
         }
+        ensureClient();
         startChannel();
+        sessionTick();
+        window.setInterval(sessionTick, 30000);
       });
 
       window.setTimeout(function () {
-        if (!tracked) hideOnline();
+        if (!tracked && !serverCount) hideOnline();
       }, 12000);
     }
 
@@ -20373,10 +20643,19 @@ function friendlyRemoteError(error) {
     });
 
     window.addEventListener('pageshow', function (event) {
-      if (!event.persisted || !channel || !tracked) return;
-      try { channel.track({ at: Date.now() }); } catch (error) { /* noop */ }
+      if (event.persisted) {
+        if (channel && tracked) {
+          try { channel.track({ at: Date.now() }); } catch (error) { /* noop */ }
+        }
+        if (started) sessionTick();
+      }
+    });
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible' && started) sessionTick();
     });
   })();
+
   </script>
 
 <script>
