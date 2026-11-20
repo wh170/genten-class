@@ -7476,6 +7476,25 @@ svg {
   transition: opacity 0.28s var(--ease);
 }
 
+/* 涟漪单独置于地图画布之上，避免中心波纹被省份填色遮住。 */
+.map-ripple-layer {
+  position: absolute;
+  z-index: 4;
+  top: 48%;
+  left: 50%;
+  width: min(96%, 570px);
+  aspect-ratio: 1;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.map-ripple-layer svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
 .map-taiji-labels svg {
   display: block;
   width: 100%;
@@ -7512,7 +7531,8 @@ svg {
   opacity: 0.96;
 }
 
-/* 太极八卦整体缓慢顺时针旋转；主图层、上方叠层与卦名同步，永不停止。 */
+/* 太极八卦差速旋转：外圈 120s 顺行，八卦 60s 逆行，核心 30s 顺行；
+   卦名与八卦同步逆行。整盘不再统一旋转。 */
 @keyframes baguaSlowSpin {
   from {
     transform: translate(-50%, -50%) rotate(0deg);
@@ -7522,11 +7542,89 @@ svg {
   }
 }
 
-.map-taiji,
-.map-taiji-overlay,
+@keyframes taijiRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .map-taiji-labels {
-  animation: baguaSlowSpin 120s linear infinite;
+  animation: baguaSlowSpin 60s linear infinite reverse;
   will-change: transform;
+}
+
+.taiji-ring-outer,
+.taiji-ring-mid,
+.taiji-core {
+  transform-box: fill-box;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.taiji-ring-outer {
+  animation: taijiRotate 120s linear infinite;
+}
+
+.taiji-ring-mid {
+  animation: taijiRotate 60s linear infinite reverse;
+}
+
+.taiji-core {
+  animation: taijiRotate 30s linear infinite;
+}
+
+/* 点按省份时整盘短暂震亮；class 由地图 click 切换。 */
+.map-taiji-svg {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.map-taiji.is-shaking .map-taiji-svg {
+  animation: arrayShake 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.map-taiji.is-shaking .map-taiji-labels {
+  filter: brightness(1.5) drop-shadow(0 0 18px rgba(235, 214, 164, 0.75));
+}
+
+@keyframes arrayShake {
+  0% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(200,160,90,0.2)); }
+  20% { transform: scale(1.06) rotate(1deg); filter: drop-shadow(0 0 40px rgba(235,214,164,0.9)) brightness(1.8); }
+  40% { transform: scale(0.98) rotate(-1deg); filter: drop-shadow(0 0 15px rgba(235,214,164,0.5)); }
+  60% { transform: scale(1.02) rotate(0.5deg); }
+  100% { transform: scale(1) rotate(0); filter: drop-shadow(0 0 5px rgba(200,160,90,0.2)); }
+}
+
+/* 点击时从太极中心向外的两圈金纹；圆心与 viewBox 中心一致。 */
+.ripple-wave {
+  fill: none;
+  stroke: #ebd6a4;
+  stroke-width: 1.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0.1);
+  opacity: 1;
+  animation: rippleExpand 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes rippleExpand {
+  0% { transform: scale(0.1); opacity: 1; stroke-width: 3; }
+  50% { opacity: 0.6; }
+  100% { transform: scale(4); opacity: 0; stroke-width: 0.5; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-taiji-labels,
+  .taiji-ring-outer,
+  .taiji-ring-mid,
+  .taiji-core {
+    animation: none;
+  }
+  .map-taiji.is-shaking .map-taiji-svg {
+    animation: none;
+  }
+  .ripple-wave {
+    display: none;
+  }
 }
 
   
@@ -8325,7 +8423,8 @@ svg {
 /* 太极八卦完整显示：以地图区高度为上限，避免旋转时顶部被裁切 */
 .map-taiji,
 .map-taiji-overlay,
-.map-taiji-labels {
+.map-taiji-labels,
+.map-ripple-layer {
   width: auto;
   height: min(92%, 570px);
   top: 50%;
@@ -10243,25 +10342,28 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
                   </linearGradient>
                 </defs>
                 <circle cx="300" cy="300" r="286" fill="url(#taijiWash)"/>
-                <g opacity=".4" stroke="url(#taijiGold)" stroke-width="1.1">
+                <g class="taiji-ring-outer" opacity=".4" stroke="url(#taijiGold)" stroke-width="1.1">
                   <circle cx="300" cy="300" r="272"/>
                   <circle cx="300" cy="300" r="252" stroke-opacity=".5" stroke-dasharray="1 7"/>
                   <circle cx="300" cy="300" r="156" stroke-opacity=".55"/>
                 </g>
-                <g class="taiji-trigrams" stroke="url(#taijiGold)" stroke-width="3.2" stroke-linecap="square" opacity=".5">
+                <g class="taiji-trigrams taiji-ring-mid" stroke="url(#taijiGold)" stroke-width="3.2" stroke-linecap="square" opacity=".5">
                   <g transform="rotate(0 300 300) translate(300 8) scale(1.16)"><path d="M-25 -12h50"/><path d="M-25 0h50"/><path d="M-25 12h50"/></g><g transform="rotate(45 300 300) translate(300 8) scale(1.16)"><path d="M-25 -12h20M5 -12h20"/><path d="M-25 0h50"/><path d="M-25 12h50"/></g><g transform="rotate(90 300 300) translate(300 8) scale(1.16)"><path d="M-25 -12h50"/><path d="M-25 0h20M5 0h20"/><path d="M-25 12h50"/></g><g transform="rotate(135 300 300) translate(300 8) scale(1.16)"><path d="M-25 -12h20M5 -12h20"/><path d="M-25 0h20M5 0h20"/><path d="M-25 12h50"/></g><g transform="rotate(180 300 300) translate(300 8) scale(1.16)"><path d="M-25 -12h50"/><path d="M-25 0h50"/><path d="M-25 12h20M5 12h20"/></g><g transform="rotate(225 300 300) translate(300 8) scale(1.16)"><path d="M-25 -12h20M5 -12h20"/><path d="M-25 0h50"/><path d="M-25 12h20M5 12h20"/></g><g transform="rotate(270 300 300) translate(300 8) scale(1.16)"><path d="M-25 -12h50"/><path d="M-25 0h20M5 0h20"/><path d="M-25 12h20M5 12h20"/></g><g transform="rotate(315 300 300) translate(300 8) scale(1.16)"><path d="M-25 -12h20M5 -12h20"/><path d="M-25 0h20M5 0h20"/><path d="M-25 12h20M5 12h20"/></g>
                 </g>
-                <g class="taiji-fret-ring" stroke="url(#taijiGold)" stroke-width=".9" opacity=".2">
+                <g class="taiji-fret-ring taiji-ring-outer" stroke="url(#taijiGold)" stroke-width=".9" opacity=".2">
                   <g transform="rotate(0.0 300 300) translate(300 60)"><path d="M-5 -5h10v10h-10zM-2 -2h4v4h-4z"/></g><g transform="rotate(22.5 300 300) translate(300 60)"><path d="M-5 -5h10v10h-10zM-2 -2h4v4h-4z"/></g><g transform="rotate(45.0 300 300) translate(300 60)"><path d="M-5 -5h10v10h-10zM-2 -2h4v4h-4z"/></g><g transform="rotate(67.5 300 300) translate(300 60)"><path d="M-5 -5h10v10h-10zM-2 -2h4v4h-4z"/></g><g transform="rotate(90.0 300 300) translate(300 60)"><path d="M-5 -5h10v10h-10zM-2 -2h4v4h-4z"/></g><g transform="rotate(112.5 300 300) translate(300 60)"><path d="M-5 -5h10v10h-10zM-2 -2h4v4h-4z"/></g><g transform="rotate(135.0 300 300) translate(300 60)"><path d="M-5 -5h10v10h-10zM-2 -2h4v4h-4z"/></g><g transform="rotate(157.5 300 300) translate(300 60)"><path d="M-5 -5h10v10h-10zM-2 -2h4v4h-4z"/></g><g transform="rotate(180.0 300 300) translate(300 60)"><path d="M-5 -5h10v10h-10zM-2 -2h4v4h-4z"/></g><g transform="rotate(202.5 300 300) translate(300 60)"><path d="M-5 -5h10v10h-10zM-2 -2h4v4h-4z"/></g><g transform="rotate(225.0 300 300) translate(300 60)"><path d="M-5 -5h10v10h-10zM-2 -2h4v4h-4z"/></g><g transform="rotate(247.5 300 300) translate(300 60)"><path d="M-5 -5h10v10h-10zM-2 -2h4v4h-4z"/></g><g transform="rotate(270.0 300 300) translate(300 60)"><path d="M-5 -5h10v10h-10zM-2 -2h4v4h-4z"/></g><g transform="rotate(292.5 300 300) translate(300 60)"><path d="M-5 -5h10v10h-10zM-2 -2h4v4h-4z"/></g><g transform="rotate(315.0 300 300) translate(300 60)"><path d="M-5 -5h10v10h-10zM-2 -2h4v4h-4z"/></g><g transform="rotate(337.5 300 300) translate(300 60)"><path d="M-5 -5h10v10h-10zM-2 -2h4v4h-4z"/></g>
                 </g>
-                <g transform="translate(300 300)">
-                  <circle r="118" fill="#9f7b46" fill-opacity=".08"/>
+                <g class="taiji-core">
+                  <g transform="translate(300 300)">
+                    <circle r="118" fill="#9f7b46" fill-opacity=".08"/>
                   <path d="M0 -118 A118 118 0 0 1 0 118 A59 59 0 0 0 0 0 A59 59 0 0 1 0 -118 Z" fill="url(#taijiGold)" fill-opacity=".12"/>
                   <path d="M0 -118 A59 59 0 0 1 0 0 A59 59 0 0 0 0 118" stroke="#382414" stroke-width="2.0" opacity=".62"/>
                   <circle r="118" stroke="#382414" stroke-width="1.6" opacity=".55"/>
                   <circle cx="0" cy="-59" r="17" fill="url(#taijiGold)" fill-opacity=".3"/>
                   <circle cx="0" cy="59" r="17" fill="#16110c" fill-opacity=".55" stroke="url(#taijiGold)" stroke-width="1"/>
+                  </g>
                 </g>
+                <g class="ripple-container"></g>
                 <circle class="map-taiji-pulse" cx="300" cy="300" r="272" stroke="url(#taijiGold)" stroke-width="1.5"/>
               </svg>
             </div>
@@ -10278,6 +10380,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
                   <g transform="rotate(270 300 300) translate(300 38)"><text x="0" y="0">艮</text></g>
                   <g transform="rotate(315 300 300) translate(300 38)"><text x="0" y="0">坤</text></g>
                 </g>
+              </svg>
+            </div>
+            <div class="map-ripple-layer" aria-hidden="true">
+              <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+                <g class="ripple-container"></g>
               </svg>
             </div>
             <div class="map-orbit" aria-hidden="true"><span class="map-orbit-mark">N</span></div>
@@ -11948,6 +12055,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
   let teacherSaveTimer = 0;
   let teacherDeleteTimer = 0;
   let mapPulseTimer = 0;
+  let mapShakeTimer = 0;
 
   /* ======================================================================
      05. Web Audio 音效引擎
@@ -15038,6 +15146,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     if (!province) return;
 
     Sound.playGuqin();
+    triggerArrayShake();
 
     const hasMemberInProvince = state.members.some(function (member) {
       return member.province === province;
@@ -15064,6 +15173,39 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     mapPulseTimer = window.setTimeout(function () {
       pulse.classList.remove('is-pulsing');
     }, 1500);
+  }
+
+  function triggerArrayShake() {
+    const plate = document.querySelector('.map-taiji');
+    if (!plate) return;
+    const rippleContainer = document.querySelector('.map-ripple-layer .ripple-container') || plate.querySelector('.ripple-container');
+
+    plate.classList.remove('is-shaking');
+    void plate.offsetWidth;
+    plate.classList.add('is-shaking');
+    window.clearTimeout(mapShakeTimer);
+    mapShakeTimer = window.setTimeout(function () {
+      plate.classList.remove('is-shaking');
+    }, 600);
+
+    if (!rippleContainer) return;
+
+    function createRipple(delay) {
+      window.setTimeout(function () {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', '300');
+        circle.setAttribute('cy', '300');
+        circle.setAttribute('r', '68');
+        circle.setAttribute('class', 'ripple-wave');
+        rippleContainer.appendChild(circle);
+        window.setTimeout(function () {
+          if (circle.parentNode) circle.parentNode.removeChild(circle);
+        }, 1300);
+      }, delay);
+    }
+
+    createRipple(0);
+    createRipple(200);
   }
 
   function handleMapHover(params) {
