@@ -9693,22 +9693,7 @@ a { color: #806131; }
 .taiji-gua-label, .map-taiji-labels text { fill: #70562c !important; opacity: 0.9; }
 .taiji-ring-64 rect { fill: #7a5d31 !important; opacity: 0.48 !important; }
 .taiji-trigrams, .taiji-fret-ring, .taiji-ring-outer circle { stroke-opacity: 0.68; }
-.map-legend {
-  color: #5f7864;
-  font-size: 10px;
-  gap: 10px;
-  padding: 6px 10px;
-  border: 1px solid rgba(112, 141, 117, 0.22);
-  border-radius: 10px;
-  background: rgba(255, 253, 247, 0.88);
-}
-.map-legend .legend-group { gap: 11px; }
-.map-legend .legend-item { gap: 5px; }
-.map-legend .legend-item b {
-  font-weight: 500;
-  color: #8a6732;
-  font-variant-numeric: tabular-nums;
-}
+.map-legend { color: #6b7f70; }
 .map-legend i { border-color: rgba(77, 109, 83, 0.36); }
 .map-tooltip {
   border-color: rgba(69, 100, 77, 0.34) !important;
@@ -10079,7 +10064,10 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
 }
 
 /* 山河圖整體翻成淡青灰，再低飽和 */
-/* 地图颜色由 ECharts 浅色主题直接给出，不再整块反相 */
+.china-map {
+  filter: invert(1) grayscale(1) sepia(.45) saturate(.65) hue-rotate(55deg) brightness(1.07) contrast(.92) !important;
+  opacity: .96 !important;
+}
 
 /* 64 卦與八卦在淺底上提高可讀性 */
 .map-taiji-svg { filter: sepia(.25) brightness(.78) saturate(.85) !important; }
@@ -10113,8 +10101,9 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
 
 /* 只翻轉地圖畫布，保留 tooltip 可讀 */
 .china-map { filter: none !important; }
-#chinaMap > div:first-child { filter: none !important; }
-.china-map canvas { filter: none !important; opacity: 1 !important; }
+#chinaMap > div:first-child {
+  filter: invert(1) grayscale(1) sepia(.45) saturate(.65) hue-rotate(55deg) brightness(1.07) contrast(.92) !important;
+}
 .map-tooltip {
   background: rgba(255, 253, 247, .98) !important;
   color: #2b4a35 !important;
@@ -10136,6 +10125,35 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
 #chinaMap > div:nth-child(2),
 #chinaMap > div:nth-child(2) * { color: #2b4a35 !important; }
 #chinaMap > div:nth-child(2) .map-tooltip-name { color: #1f3d2b !important; }
+
+
+/* —— 清理卡牌与面板的装饰线、旧生肖底图、厚阴影 —— */
+.zodiac-card .zodiac-art-wrap,
+.zodiac-card .zodiac-art,
+.zodiac-card .zodiac-shade { display: none !important; }
+.zodiac-card::before,
+.zodiac-card::after { display: none !important; content: none !important; }
+.zodiac-card {
+  box-shadow: none !important;
+  border: 1px solid rgba(67, 97, 73, 0.18) !important;
+}
+.zodiac-card:hover:not(:disabled) {
+  box-shadow: none !important;
+  border-color: rgba(150, 115, 55, 0.48) !important;
+}
+.zodiac-glyph, .zodiac-card .zodiac-glyph { text-shadow: none !important; }
+.zodiac-sign-corner { box-shadow: none !important; }
+.zodiac-fret, .fret-frame { display: none !important; }
+.panel::before, .panel::after,
+.zodiac-panel::before, .zodiac-panel::after,
+.tree-panel::before, .tree-panel::after,
+.map-panel::before, .map-panel::after,
+.teacher-panel::before, .teacher-panel::after,
+.roster-panel::before, .roster-panel::after,
+.gallery-panel::before, .gallery-panel::after {
+  display: none !important;
+  content: none !important;
+}
 
 </style>
 </head>
