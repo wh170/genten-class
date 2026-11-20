@@ -10155,6 +10155,18 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
   content: none !important;
 }
 
+/* —— 最高優先級：移除卡牌殘留陰影與地圖舊反相 —— */
+.zodiac-panel .zodiac-grid .zodiac-card,
+.zodiac-panel .zodiac-grid .zodiac-card:hover:not(:disabled) {
+  box-shadow: none !important;
+}
+#chinaMap > div:first-child,
+.map-stage canvas,
+.china-map canvas {
+  filter: none !important;
+  opacity: 1 !important;
+}
+
 </style>
 </head>
 
@@ -12042,9 +12054,9 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
     paper: '#e6dbc8',
     muted: '#bcae95',
     faint: '#94856f',
-    mapBase: 'rgba(232, 238, 226, 0.88)',
-    mapBaseDeep: '#e9efe4',
-    mapBorder: 'rgba(79, 108, 86, 0.38)',
+    mapBase: 'rgba(218, 228, 208, 0.96)',
+    mapBaseDeep: '#e3ebda',
+    mapBorder: 'rgba(70, 99, 75, 0.44)',
     mapHighlight: 'rgba(186, 151, 82, 0.26)',
     mapSelected: 'rgba(206, 168, 92, 0.46)',
     mapSelectedLine: '#87652b',
