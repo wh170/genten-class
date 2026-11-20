@@ -10416,6 +10416,54 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
 }
 
 </style>
+<style id="forms-light">
+
+/* 教师表单 / 班级活动：去掉深色底，统一浅纸卡 */
+.teacher-form {
+  padding: 16px !important;
+  border: 1px solid rgba(70, 99, 75, .18) !important;
+  border-radius: 14px !important;
+  background: #fbf8ef !important;
+  box-shadow: 0 10px 24px rgba(50, 70, 50, .05) !important;
+}
+.teacher-form-title { color: #264a35 !important; font-size: 14px !important; font-weight: 600 !important; }
+.teacher-save-state, .teacher-form-hint { color: #7b8b7d !important; }
+.teacher-field { color: #5f7063 !important; font-weight: 500; }
+.teacher-field input, .teacher-field select, .teacher-field textarea {
+  border-color: rgba(70, 99, 75, .16) !important;
+  background: #fffdf7 !important;
+  color: #264a35 !important;
+  border-radius: 7px !important;
+}
+.class-activity-composer {
+  padding: 14px 16px !important;
+  border: 1px solid rgba(70, 99, 75, .16) !important;
+  border-radius: 12px !important;
+  background: #fbf8ef !important;
+}
+.class-activity-compose-field .form-label { color: #5f7063 !important; }
+.class-overview-status {
+  padding: 10px 12px !important;
+  border-left: 2px solid #b58c4e !important;
+  border-radius: 0 8px 8px 0 !important;
+  background: #f8f4e8 !important;
+  color: #6b7d6f !important;
+}
+
+</style>
+<style id="forms-light2">
+
+.class-overview-status.is-ok,
+.class-overview-status.is-error,
+.class-overview-status.is-loading {
+  background: #faf6ec !important;
+  border-left-color: #b58c4e !important;
+}
+.class-overview-status.is-ok { color: #5e7462 !important; }
+.class-overview-status.is-error { color: #8a5f45 !important; }
+.class-overview-status.is-loading { color: #7b8b7d !important; }
+
+</style>
 </head>
 
 <body>
