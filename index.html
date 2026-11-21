@@ -10624,17 +10624,17 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
     radial-gradient(ellipse at 64% 98%, rgba(255,211,156,.20), transparent 60%),
     radial-gradient(ellipse at 92% 78%, rgba(242,204,154,.12), transparent 62%);
     filter: blur(22px); mix-blend-mode: screen; opacity: .38; animation: splashMist 18s ease-in-out infinite alternate; }
-  #splashScreen .splash-hand-picture { z-index: 2; }
-  #splashScreen .splash-hand { filter: drop-shadow(0 18px 26px rgba(0,0,0,.52)) drop-shadow(0 3px 7px rgba(0,0,0,.36)); opacity: .985; transform-origin: 52% 58%; animation: splashHandBreath 8s ease-in-out infinite; will-change: transform; }
-  #splashScreen .splash-quote { position: absolute; left: 50%; top: clamp(26px, 5.2vh, 62px); transform: translateX(-50%); z-index: 5; display: flex; direction: rtl; gap: clamp(6px, 1vw, 16px); color: #ffe3a4; text-shadow: 0 4px 20px rgba(30,14,0,.82), 0 0 30px rgba(255,188,84,.34), 0 1px 0 rgba(80,48,8,.55); font-family: var(--splash-font); font-weight: 400; }
+  #splashScreen .splash-hand-picture { z-index: 5; }
+  #splashScreen .splash-hand { filter: none; opacity: .99; transform-origin: 52% 58%; animation: splashHandBreath 8s ease-in-out infinite; will-change: transform; }
+  #splashScreen .splash-quote { position: absolute; left: 50%; top: clamp(26px, 5.2vh, 62px); transform: translateX(-50%); z-index: 8; display: flex; direction: rtl; gap: clamp(6px, 1vw, 16px); color: #ffe3a4; text-shadow: 0 4px 20px rgba(30,14,0,.82), 0 0 30px rgba(255,188,84,.34), 0 1px 0 rgba(80,48,8,.55); font-family: var(--splash-font); font-weight: 400; }
   #splashScreen .splash-quote span { writing-mode: vertical-rl; text-orientation: upright; font-size: clamp(48px, 5.6vw, 100px); line-height: 1.04; letter-spacing: .08em; }
-  #splashScreen .splash-hint { position: absolute; left: 50%; bottom: clamp(26px, 4.6vh, 50px); z-index: 6; transform: translateX(-50%); margin: 0; color: rgba(255,244,218,.94); font-family: "Songti SC", "STSong", serif; font-size: clamp(12px, 1.1vw, 15px); letter-spacing: .24em; white-space: nowrap; text-shadow: 0 2px 12px rgba(0,0,0,.78); animation: splashBreathe 3.4s ease-in-out infinite; }
+  #splashScreen .splash-hint { position: absolute; left: 50%; bottom: clamp(26px, 4.6vh, 50px); z-index: 8; transform: translateX(-50%); margin: 0; color: rgba(255,244,218,.94); font-family: "Songti SC", "STSong", serif; font-size: clamp(12px, 1.1vw, 15px); letter-spacing: .24em; white-space: nowrap; text-shadow: 0 2px 12px rgba(0,0,0,.78); animation: splashBreathe 3.4s ease-in-out infinite; }
   #splashScreen .splash-hint::before, #splashScreen .splash-hint::after { content: ""; display: inline-block; width: clamp(18px, 3vw, 48px); height: 1px; margin: 0 .9em .35em; background: linear-gradient(90deg, transparent, rgba(255,224,170,.55), transparent); vertical-align: middle; }
   @keyframes splashBreathe { 0%,100% { opacity: .58; } 50% { opacity: 1; } }
   @keyframes splashMist { from { transform: translate3d(-1.5%, 1%, 0) scale(1); } to { transform: translate3d(1.5%, -1%, 0) scale(1.04); } }
 
   /* 常驻玻璃碎片与中心光晕 */
-  #splashScreen .splash-glow { position: absolute; left: 50%; top: 50%; width: 86vmin; height: 86vmin; transform: translate(-50%, -50%); z-index: 1; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(255,206,120,.42) 0%, rgba(255,178,84,.22) 28%, rgba(255,160,64,.09) 52%, transparent 72%); filter: blur(26px); mix-blend-mode: screen; opacity: .68; animation: splashGlowBreath 7.5s ease-in-out infinite; }
+  #splashScreen .splash-glow { position: absolute; left: 50%; top: 50%; width: 86vmin; height: 86vmin; transform: translate(-50%, -50%); z-index: 2; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(255,206,120,.42) 0%, rgba(255,178,84,.22) 28%, rgba(255,160,64,.09) 52%, transparent 72%); filter: blur(26px); mix-blend-mode: screen; opacity: .68; animation: splashGlowBreath 7.5s ease-in-out infinite; }
   #splashScreen .splash-shards { position: absolute; inset: 0; z-index: 3; overflow: hidden; pointer-events: none; }
   #splashScreen .splash-shard { position: absolute; display: block; opacity: 0; pointer-events: none; animation-name: splashShardDrift; animation-timing-function: linear; animation-iteration-count: infinite; filter: drop-shadow(0 1px 2px rgba(0,0,0,.75)) drop-shadow(0 0 7px rgba(195,225,255,.5)); will-change: transform, opacity; }
   #splashScreen .splash-shard svg { display: block; width: 100%; height: 100%; overflow: visible; }
@@ -10661,10 +10661,19 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
       linear-gradient(180deg, rgba(5,14,19,.14) 0%, rgba(5,14,19,0) 28%, rgba(5,14,19,.04) 48%, rgba(4,11,15,.24) 72%, rgba(3,9,12,.70) 100%),
       linear-gradient(90deg, rgba(4,12,16,.30) 0%, rgba(4,12,16,.08) 22%, rgba(4,12,16,0) 46%, rgba(4,12,16,0) 74%, rgba(4,12,16,.14) 100%); }
     #splashScreen .splash-mist { opacity: .34; }
-    #splashScreen .splash-hand { filter: drop-shadow(0 14px 20px rgba(0,0,0,.54)) drop-shadow(0 2px 5px rgba(0,0,0,.34)); }
+    #splashScreen .splash-hand { filter: none; }
     #splashScreen .splash-hint { letter-spacing: .15em; font-size: 12px; bottom: 30px; }
     #splashScreen .splash-hint::before, #splashScreen .splash-hint::after { width: 18px; }
   }
+
+  /* 厚玻璃断口：手层上方的一圈暗色断面 + 白色薄高光 */
+  #splashScreen .splash-rim { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 6; pointer-events: none; overflow: hidden; }
+  #splashScreen .splash-rim-edge { fill: none; stroke: rgba(176,219,226,.24); stroke-width: 18; vector-effect: non-scaling-stroke; stroke-linejoin: round; filter: blur(1.8px); }
+  #splashScreen .splash-rim-edge.is-light { stroke: rgba(240,255,255,.50); stroke-width: 1; filter: none; }
+  #splashScreen .splash-rim .splash-cracks { filter: drop-shadow(0 1px 1px rgba(0,0,0,.7)); }
+  #splashScreen .splash-rim .splash-crack { stroke: rgba(255,255,255,.60); stroke-width: .85; vector-effect: non-scaling-stroke; fill: none; }
+  #splashScreen .splash-rim .splash-crack.is-strong { stroke: rgba(255,249,229,.88); stroke-width: 1.15; }
+  #splashScreen .splash-shard { backdrop-filter: blur(1.5px); -webkit-backdrop-filter: blur(1.5px); }
   @media (prefers-reduced-motion: reduce) {
     #splashScreen { transition: opacity .3s ease, visibility 0s linear .3s; }
     #splashScreen .splash-mist, #splashScreen .splash-hint, #splashScreen .splash-glow, #splashScreen .splash-hand { animation: none; }
@@ -10718,15 +10727,21 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
       </linearGradient>
       <mask id="splashGlassHole" maskUnits="userSpaceOnUse">
         <rect width="1000" height="1000" fill="#fff"/>
-        <polygon class="glass-hole glass-hole--desktop" points="60,440 100,400 150,405 190,440 225,510 250,580 250,650 235,710 210,760 170,790 130,800 95,770 75,710 60,630 55,530" fill="#000"/>
-        <polygon class="glass-hole glass-hole--mobile" points="60,400 120,370 200,380 280,410 370,460 460,520 540,580 600,650 600,720 560,780 490,830 410,860 330,860 250,840 180,800 120,740 85,660 65,560 55,470" fill="#000"/>
+        <polygon class="glass-hole glass-hole--desktop" points="70,460 100,430 140,430 170,450 200,500 220,560 225,620 215,680 195,720 170,750 140,755 110,735 90,690 75,620 70,540" fill="#000"/>
+        <polygon class="glass-hole glass-hole--mobile" points="80,450 120,420 180,430 240,450 310,490 380,540 440,590 480,650 480,710 450,760 400,800 340,810 280,800 220,770 170,720 130,660 100,590 85,520" fill="#000"/>
       </mask>
     </defs>
     <rect width="1000" height="1000" fill="url(#splashGlassGrad)" mask="url(#splashGlassHole)"/>
     <path d="M-50 720 L420 180 L620 80 L1050 90 L1050 200 L540 300 L80 850 Z" fill="url(#splashGlassSheen)" opacity=".26" mask="url(#splashGlassHole)"/>
+    <polygon class="splash-hole-edge glass-hole--desktop" points="70,460 100,430 140,430 170,450 200,500 220,560 225,620 215,680 195,720 170,750 140,755 110,735 90,690 75,620 70,540"/>
+    <polygon class="splash-hole-edge glass-hole--mobile" points="80,450 120,420 180,430 240,450 310,490 380,540 440,590 480,650 480,710 450,760 400,800 340,810 280,800 220,770 170,720 130,660 100,590 85,520"/>
+  </svg>
+  <svg class="splash-rim" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
+    <polygon class="splash-rim-edge glass-hole--desktop" points="70,460 100,430 140,430 170,450 200,500 220,560 225,620 215,680 195,720 170,750 140,755 110,735 90,690 75,620 70,540"/>
+    <polygon class="splash-rim-edge is-light glass-hole--desktop" points="70,460 100,430 140,430 170,450 200,500 220,560 225,620 215,680 195,720 170,750 140,755 110,735 90,690 75,620 70,540"/>
+    <polygon class="splash-rim-edge glass-hole--mobile" points="80,450 120,420 180,430 240,450 310,490 380,540 440,590 480,650 480,710 450,760 400,800 340,810 280,800 220,770 170,720 130,660 100,590 85,520"/>
+    <polygon class="splash-rim-edge is-light glass-hole--mobile" points="80,450 120,420 180,430 240,450 310,490 380,540 440,590 480,650 480,710 450,760 400,800 340,810 280,800 220,770 170,720 130,660 100,590 85,520"/>
     <g class="splash-cracks" id="splashCracks"></g>
-    <polygon class="splash-hole-edge glass-hole--desktop" points="60,440 100,400 150,405 190,440 225,510 250,580 250,650 235,710 210,760 170,790 130,800 95,770 75,710 60,630 55,530"/>
-    <polygon class="splash-hole-edge glass-hole--mobile" points="60,400 120,370 200,380 280,410 370,460 460,520 540,580 600,650 600,720 560,780 490,830 410,860 330,860 250,840 180,800 120,740 85,660 65,560 55,470"/>
   </svg>
   <div class="splash-shards" aria-hidden="true"></div>
   <div class="splash-quote"><span>数风流人物</span><span>还看今朝</span></div>
@@ -21035,8 +21050,8 @@ function friendlyRemoteError(error) {
   function rand(min, max) { return min + Math.random() * (max - min); }
   // Hole outlines must match the SVG mask polygons (0-1 viewport fractions).
   var HOLES = {
-    desktop: [[0.06,0.44],[0.10,0.40],[0.15,0.405],[0.19,0.44],[0.225,0.51],[0.25,0.58],[0.25,0.65],[0.235,0.71],[0.21,0.76],[0.17,0.79],[0.13,0.80],[0.095,0.77],[0.075,0.71],[0.06,0.63],[0.055,0.53]],
-    mobile: [[0.06,0.40],[0.12,0.37],[0.20,0.38],[0.28,0.41],[0.37,0.46],[0.46,0.52],[0.54,0.58],[0.60,0.65],[0.60,0.72],[0.56,0.78],[0.49,0.83],[0.41,0.86],[0.33,0.86],[0.25,0.84],[0.18,0.80],[0.12,0.74],[0.085,0.66],[0.065,0.56],[0.055,0.47]]
+    desktop: [[0.07,0.46],[0.10,0.43],[0.14,0.43],[0.17,0.45],[0.20,0.50],[0.22,0.56],[0.225,0.62],[0.215,0.68],[0.195,0.72],[0.17,0.75],[0.14,0.755],[0.11,0.735],[0.09,0.69],[0.075,0.62],[0.07,0.54]],
+    mobile: [[0.08,0.45],[0.12,0.42],[0.18,0.43],[0.24,0.45],[0.31,0.49],[0.38,0.54],[0.44,0.59],[0.48,0.65],[0.48,0.71],[0.45,0.76],[0.40,0.80],[0.34,0.81],[0.28,0.80],[0.22,0.77],[0.17,0.72],[0.13,0.66],[0.10,0.59],[0.085,0.52]]
   };
   function edgePoint(poly) {
     var seg = Math.floor(Math.random() * (poly.length - 1));
@@ -21058,7 +21073,7 @@ function friendlyRemoteError(error) {
       var dx = p[0] - cx, dy = p[1] - cy;
       var len = Math.sqrt(dx * dx + dy * dy) || 1;
       var nx = dx / len, ny = dy / len;
-      var out = rand(0.025, 0.07);
+      var out = rand(0.012, 0.036);
       var line = document.createElementNS(svgNS, 'line');
       line.setAttribute('class', 'splash-crack' + (i % 5 === 0 ? ' is-strong' : ''));
       line.setAttribute('x1', (p[0] * 1000).toFixed(1));
@@ -21072,8 +21087,8 @@ function friendlyRemoteError(error) {
       branch.setAttribute('class', 'splash-crack');
       branch.setAttribute('x1', (midX * 1000).toFixed(1));
       branch.setAttribute('y1', (midY * 1000).toFixed(1));
-      branch.setAttribute('x2', ((midX + px * rand(-.03, .03) + nx * .015) * 1000).toFixed(1));
-      branch.setAttribute('y2', ((midY + py * rand(-.03, .03) + ny * .015) * 1000).toFixed(1));
+      branch.setAttribute('x2', ((midX + px * rand(-.012, .012) + nx * .008) * 1000).toFixed(1));
+      branch.setAttribute('y2', ((midY + py * rand(-.012, .012) + ny * .008) * 1000).toFixed(1));
       g.appendChild(branch);
     }
   }
@@ -21092,7 +21107,7 @@ function friendlyRemoteError(error) {
     var mobile = media.matches;
     var hole = mobile ? HOLES.mobile : HOLES.desktop;
     buildCracks(hole);
-    var count = mobile ? 16 : 18;
+    var count = mobile ? 30 : 34;
     var svgNS = 'http://www.w3.org/2000/svg';
     for (var i = 0; i < count; i++) {
       var x, y;
@@ -21113,7 +21128,7 @@ function friendlyRemoteError(error) {
       svg.setAttribute('viewBox', '0 0 100 100');
       svg.setAttribute('class', 'splash-shard' + (i % 4 === 0 ? ' is-warm' : ''));
       svg.setAttribute('aria-hidden', 'true');
-      var size = i < 6 ? (mobile ? rand(12, 26) : rand(18, 40)) : (mobile ? rand(8, 20) : rand(11, 30));
+      var size = i < 8 ? (mobile ? rand(7, 16) : rand(9, 20)) : (mobile ? rand(4, 11) : rand(6, 16));
       svg.style.left = (x * 100).toFixed(2) + '%';
       svg.style.top = (y * 100).toFixed(2) + '%';
       svg.style.width = size.toFixed(1) + 'px';
@@ -21125,7 +21140,7 @@ function friendlyRemoteError(error) {
       shine.setAttribute('class', 'shine');
       shine.setAttribute('points', points(3, true));
       svg.appendChild(glass); svg.appendChild(shine);
-      var dur = rand(7, 14);
+      var dur = rand(11, 22);
       svg.style.animationDuration = dur.toFixed(2) + 's';
       svg.style.animationDelay = (-dur * Math.random()).toFixed(2) + 's';
       svg.style.setProperty('--dx', (-rand(10, 30)).toFixed(1) + 'vw');
