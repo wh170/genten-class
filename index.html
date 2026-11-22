@@ -21212,10 +21212,20 @@ function friendlyRemoteError(error) {
       return hex ? 'o-' + hex + '__' : 'u-guest__';
     }
 
+    function currentIsAdmin() {
+      var auth = currentAuth();
+      return Boolean(auth && auth.role === 'admin');
+    }
+
     function normalizeGalleryItem(item) {
       if (!item || typeof item !== 'object') return item;
+      var mineHex = currentOwnerHex();
       item.ownerHex = item.ownerHex || ownerHexFromPath(item.path);
-      item.isMine = Boolean(item.ownerHex && item.ownerHex === currentOwnerHex());
+      item.isLegacy = !item.ownerHex;
+      /* 旧照片没有上传者前缀，无法逐人归属；管理员在「仅看自己的」中可见并管理。 */
+      item.isMine = item.ownerHex
+        ? item.ownerHex === mineHex
+        : currentIsAdmin();
       return item;
     }
 
