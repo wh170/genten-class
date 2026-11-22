@@ -9291,6 +9291,38 @@ html.intro-disabled .totem-background::after {
 .gallery-status.is-error { color: #d6a08a; }
 .gallery-status.is-ok { color: var(--gold-soft); }
 
+.gallery-scope {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.gallery-scope-btn {
+  min-height: 28px;
+  padding: 4px 12px;
+  border: 1px solid rgba(36, 68, 50, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.66);
+  color: #4f6558;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, border-color .18s ease;
+}
+
+.gallery-scope-btn:hover { border-color: rgba(36, 68, 50, 0.34); }
+.gallery-scope-btn.is-active {
+  background: #1b3a2b;
+  border-color: #1b3a2b;
+  color: #fffaf0;
+}
+
+@media (max-width: 760px) {
+  .gallery-scope { margin-top: 8px; }
+  .gallery-scope-btn { min-height: 27px; padding: 4px 10px; font-size: 9.5px; }
+}
+
 .gallery-scroll {
   position: relative;
   max-height: min(60vh, 560px);
@@ -9355,6 +9387,26 @@ html.intro-disabled .totem-background::after {
 .gallery-delete:hover {
   background: #8b3f35;
 }
+
+.gallery-mine-tag {
+  position: absolute;
+  z-index: 4;
+  left: 7px;
+  bottom: 7px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(255, 253, 246, 0.9);
+  color: #1b3a2b;
+  border: 1px solid rgba(36, 68, 50, 0.24);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+}
+
+.gallery-tile.is-mine .gallery-item {
+  border-color: rgba(36, 68, 50, 0.34);
+}
+
 
 @media (max-width: 760px) {
   .gallery-delete {
@@ -12454,14 +12506,19 @@ try {
           </div>
         </div>
 
+        <div class="gallery-scope" id="galleryScope" role="tablist" aria-label="图库范围">
+          <button class="gallery-scope-btn is-active" type="button" data-gallery-scope="all" role="tab" aria-selected="true">所有人的</button>
+          <button class="gallery-scope-btn" type="button" data-gallery-scope="mine" role="tab" aria-selected="false">仅看自己的</button>
+        </div>
+
         <p class="gallery-status" id="galleryStatus" role="status" aria-live="polite"></p>
 
         <div class="gallery-scroll" id="galleryScroll">
           <div class="gallery-grid" id="galleryGrid"></div>
           <div class="gallery-empty" id="galleryEmpty">
             <span class="gallery-empty-seal" aria-hidden="true">影</span>
-            <p class="gallery-empty-title">图库尚无照片</p>
-            <p class="gallery-empty-copy">点右上角「上传图片」，留下第一张班级记忆。</p>
+            <p class="gallery-empty-title" id="galleryEmptyTitle">图库尚无照片</p>
+            <p class="gallery-empty-copy" id="galleryEmptyCopy">点右上角「上传图片」，留下第一张班级记忆。</p>
           </div>
         </div>
 
@@ -20847,6 +20904,7 @@ function friendlyRemoteError(error) {
     var loading = false;
     var uploading = false;
     var galleryUploadEpoch = 0;
+    var galleryScope = 'all';
 
     async function loadHiddenPaths() {
       try {
@@ -20913,6 +20971,54 @@ function friendlyRemoteError(error) {
       return clean.indexOf(PREFIX) === 0 ? clean : PREFIX + clean;
     }
 
+    function currentAuth() {
+      try {
+        var raw = localStorage.getItem('hongtong-bighuai-class-v1:auth');
+        var parsed = raw ? JSON.parse(raw) : null;
+        return parsed && typeof parsed === 'object' ? parsed : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function utf8Hex(value) {
+      var text = String(value == null ? '' : value);
+      if (window.TextEncoder) {
+        return Array.prototype.map.call(new TextEncoder().encode(text), function (byte) {
+          return ('0' + byte.toString(16)).slice(-2);
+        }).join('');
+      }
+      var out = '';
+      for (var i = 0; i < text.length; i += 1) {
+        out += ('0' + text.charCodeAt(i).toString(16)).slice(-2);
+      }
+      return out;
+    }
+
+    function currentOwnerHex() {
+      var auth = currentAuth();
+      if (!auth) return '';
+      return utf8Hex(auth.studentId || auth.student_id || auth.teacherId || '');
+    }
+
+    function ownerHexFromPath(path) {
+      var clean = String(path || '').split('?')[0].split('/').pop() || '';
+      var match = clean.match(/^o-([0-9a-f]+)__/i);
+      return match ? match[1].toLowerCase() : '';
+    }
+
+    function ownerPrefix() {
+      var hex = currentOwnerHex();
+      return hex ? 'o-' + hex + '__' : 'u-guest__';
+    }
+
+    function normalizeGalleryItem(item) {
+      if (!item || typeof item !== 'object') return item;
+      item.ownerHex = item.ownerHex || ownerHexFromPath(item.path);
+      item.isMine = Boolean(item.ownerHex && item.ownerHex === currentOwnerHex());
+      return item;
+    }
+
     function formatDate(value) {
       if (!value) return '';
       var date = new Date(value);
@@ -20927,7 +21033,7 @@ function friendlyRemoteError(error) {
         var parsed = raw ? JSON.parse(raw) : [];
         return Array.isArray(parsed) ? parsed.filter(function (item) {
           return item && item.url;
-        }).slice(0, 120) : [];
+        }).map(normalizeGalleryItem).slice(0, 120) : [];
       } catch (e) {
         return [];
       }
@@ -20941,14 +21047,11 @@ function friendlyRemoteError(error) {
       }
     }
 
-    function canDeleteGallery() {
-      try {
-        var raw = localStorage.getItem('hongtong-bighuai-class-v1:auth');
-        var auth = raw ? JSON.parse(raw) : null;
-        return Boolean(auth && auth.role === 'admin');
-      } catch (e) {
-        return false;
-      }
+    function canDeleteGallery(item) {
+      var auth = currentAuth();
+      if (!auth) return false;
+      if (auth.role === 'admin') return true;
+      return Boolean(item && item.isMine);
     }
 
     async function deleteGalleryItem(item) {
@@ -20956,7 +21059,7 @@ function friendlyRemoteError(error) {
       var token = '';
       try { token = localStorage.getItem('hongtong-bighuai-class-v1:auth-token') || ''; } catch (e) {}
       if (!token) {
-        setStatus('请先登录管理员账号，再删除图库照片。', 'error');
+        setStatus('请先登录账号，再删除图库照片。', 'error');
         return;
       }
       if (!window.confirm('确定删除这张图库照片吗？删除后无法恢复。')) return;
@@ -20980,7 +21083,7 @@ function friendlyRemoteError(error) {
             throw new Error('删除接口尚未启用，请管理员先在 Supabase 执行图库删除权限 SQL。');
           }
           if (res.status === 403) {
-            throw new Error('当前账号没有删除权限，请使用管理员账号。');
+            throw new Error('当前账号没有删除这张照片的权限。');
           }
           throw new Error('删除失败（' + res.status + '）。' + detail);
         }
@@ -20998,17 +21101,19 @@ function friendlyRemoteError(error) {
     function render() {
       if (!dom.grid || !dom.count || !dom.empty) return;
       dom.grid.innerHTML = '';
-      var canDelete = canDeleteGallery();
-      items.forEach(function (item) {
+      items.forEach(normalizeGalleryItem);
+      var visible = galleryScope === 'mine' ? items.filter(function (item) { return item.isMine; }) : items;
+
+      visible.forEach(function (item) {
         var tile = document.createElement('div');
-        tile.className = 'gallery-tile';
+        tile.className = 'gallery-tile' + (item.isMine ? ' is-mine' : '');
 
         var link = document.createElement('a');
         link.className = 'gallery-item';
         link.href = item.url;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
-        link.setAttribute('aria-label', '查看班级图库照片' + (item.date ? '，' + item.date : ''));
+        link.setAttribute('aria-label', '查看班级图库照片' + (item.date ? '，' + item.date : '') + (item.isMine ? '，我的照片' : ''));
 
         var img = document.createElement('img');
         img.src = item.url;
@@ -21029,13 +21134,20 @@ function friendlyRemoteError(error) {
         }
         tile.appendChild(link);
 
-        if (canDelete) {
+        if (item.isMine) {
+          var mineTag = document.createElement('span');
+          mineTag.className = 'gallery-mine-tag';
+          mineTag.textContent = '我的';
+          tile.appendChild(mineTag);
+        }
+
+        if (canDeleteGallery(item)) {
           var del = document.createElement('button');
           del.type = 'button';
           del.className = 'gallery-delete';
           del.textContent = '×';
-          del.title = '删除这张照片';
-          del.setAttribute('aria-label', '删除这张照片');
+          del.title = item.isMine ? '删除我的照片' : '删除这张照片';
+          del.setAttribute('aria-label', del.title);
           del.addEventListener('click', function (event) {
             event.preventDefault();
             event.stopPropagation();
@@ -21047,9 +21159,28 @@ function friendlyRemoteError(error) {
         dom.grid.appendChild(tile);
       });
 
-      dom.count.innerHTML = '共 <b>' + items.length + '</b> 张';
-      dom.empty.hidden = items.length > 0;
-      dom.grid.hidden = items.length === 0;
+      dom.count.innerHTML = '共 <b>' + visible.length + '</b> 张';
+      dom.empty.hidden = visible.length > 0;
+      dom.grid.hidden = visible.length === 0;
+      if (galleryScope === 'mine') {
+        if (dom.emptyTitle) dom.emptyTitle.textContent = '你还没有上传照片';
+        if (dom.emptyCopy) dom.emptyCopy.textContent = '点右上角「上传图片」，留下你的第一张。';
+      } else {
+        if (dom.emptyTitle) dom.emptyTitle.textContent = '图库尚无照片';
+        if (dom.emptyCopy) dom.emptyCopy.textContent = '点右上角「上传图片」，留下第一张班级记忆。';
+      }
+    }
+
+    function setGalleryScope(scope) {
+      galleryScope = scope === 'mine' ? 'mine' : 'all';
+      if (dom.scope) {
+        Array.prototype.forEach.call(dom.scope.querySelectorAll('[data-gallery-scope]'), function (button) {
+          var active = button.getAttribute('data-gallery-scope') === galleryScope;
+          button.classList.toggle('is-active', active);
+          button.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+      }
+      render();
     }
 
     async function listGallery() {
@@ -21073,12 +21204,12 @@ function friendlyRemoteError(error) {
       if (!Array.isArray(rows)) return [];
       return rows.filter(isImageObject).map(function (row) {
         var path = fullPath(row.name);
-        return {
+        return normalizeGalleryItem({
           path: path,
           url: publicUrl(path),
           date: formatDate(row.created_at || row.updated_at),
           created_at: row.created_at || row.updated_at || ''
-        };
+        });
       }).filter(function (item) {
         return !hiddenPaths[item.path];
       }).sort(function (a, b) {
@@ -21208,7 +21339,8 @@ function friendlyRemoteError(error) {
       var blob = useRaw ? file : null;
       var mime = useRaw ? meta.mime : 'image/jpeg';
       var ext = useRaw ? meta.ext : 'jpg';
-      var name = Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+      var owner = ownerPrefix();
+      var name = owner + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
       var path = PREFIX + name;
       var res;
 
@@ -21223,7 +21355,7 @@ function friendlyRemoteError(error) {
         blob = await compressImage(file);
         mime = 'image/jpeg';
         ext = 'jpg';
-        name = Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '-' + (file.size > 0 ? 'c' : 'x') + '.jpg';
+        name = owner + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '-' + (file.size > 0 ? 'c' : 'x') + '.jpg';
         path = PREFIX + name;
         res = await sendGalleryBlob(blob, path, mime);
       }
@@ -21242,6 +21374,8 @@ function friendlyRemoteError(error) {
       return {
         path: path,
         url: publicUrl(path),
+        ownerHex: ownerHexFromPath(path),
+        isMine: true,
         date: formatDate(new Date().toISOString()),
         created_at: new Date().toISOString()
       };
@@ -21295,6 +21429,9 @@ function friendlyRemoteError(error) {
       dom.upload = byId('galleryUploadBtn');
       dom.refresh = byId('galleryRefreshBtn');
       dom.file = byId('galleryFile');
+      dom.scope = byId('galleryScope');
+      dom.emptyTitle = byId('galleryEmptyTitle');
+      dom.emptyCopy = byId('galleryEmptyCopy');
       if (!dom.grid || !dom.upload || !dom.file) return;
 
       items = readCache();
@@ -21308,6 +21445,13 @@ function friendlyRemoteError(error) {
       dom.file.addEventListener('change', function () {
         handleFiles(dom.file.files);
       });
+      if (dom.scope) {
+        dom.scope.addEventListener('click', function (event) {
+          var button = event.target.closest('[data-gallery-scope]');
+          if (!button) return;
+          setGalleryScope(button.getAttribute('data-gallery-scope'));
+        });
+      }
       if (dom.refresh) {
         dom.refresh.addEventListener('click', function () { refreshGallery(true); });
       }
