@@ -20816,6 +20816,7 @@ function friendlyRemoteError(error) {
     var items = [];
     var loading = false;
     var uploading = false;
+    var galleryUploadEpoch = 0;
 
     var dom = {};
     var h = function (value) {
@@ -21022,12 +21023,15 @@ function friendlyRemoteError(error) {
     }
 
     async function refreshGallery(showMessage) {
-      if (loading) return;
+      if (loading || uploading) return;
+      var refreshEpoch = galleryUploadEpoch;
       loading = true;
       if (dom.refresh) dom.refresh.disabled = true;
       if (showMessage !== false) setStatus('正在同步图库…');
       try {
         var remote = await listGallery();
+        /* 上传期间发起的旧请求可能晚于上传返回，不能用它覆盖本地新照片/错误。 */
+        if (uploading || refreshEpoch !== galleryUploadEpoch) return;
         items = remote;
         saveCache();
         render();
@@ -21109,16 +21113,28 @@ function friendlyRemoteError(error) {
     }
 
     async function sendGalleryBlob(blob, path, mime) {
-      return fetch(SUPABASE_URL + '/storage/v1/object/' + BUCKET + '/' + path, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': 'Bearer ' + SUPABASE_KEY,
-          'Content-Type': mime,
-          'x-upsert': 'false'
-        },
-        body: blob
-      });
+      var controller = new AbortController();
+      var timer = window.setTimeout(function () { controller.abort(); }, 45000);
+      try {
+        return await fetch(SUPABASE_URL + '/storage/v1/object/' + BUCKET + '/' + path, {
+          method: 'POST',
+          signal: controller.signal,
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Content-Type': mime,
+            'x-upsert': 'false'
+          },
+          body: blob
+        });
+      } catch (err) {
+        if (err && err.name === 'AbortError') {
+          throw new Error('上传超时（45 秒），请检查网络或换一张小一点的图片再试。');
+        }
+        throw err;
+      } finally {
+        window.clearTimeout(timer);
+      }
     }
 
     async function uploadOne(file) {
@@ -21176,6 +21192,7 @@ function friendlyRemoteError(error) {
         setStatus('一次最多上传 ' + MAX_FILES + ' 张，已选取前 ' + MAX_FILES + ' 张。');
       }
       uploading = true;
+      galleryUploadEpoch += 1;
       if (dom.upload) dom.upload.disabled = true;
       var success = 0;
       var failed = 0;
@@ -21200,7 +21217,7 @@ function friendlyRemoteError(error) {
       if (dom.file) dom.file.value = '';
       if (success) {
         setStatus('已上传 ' + success + ' 张' + (failed ? '，' + failed + ' 张失败。' : '。'), failed ? 'error' : 'ok');
-        refreshGallery(false);
+        /* 不立即刷新远端：列表请求可能还没包含刚上传的对象，会把本地新照片冲掉。 */
       } else {
         setStatus(lastError || '没有图片上传成功，请稍后重试。', 'error');
       }
