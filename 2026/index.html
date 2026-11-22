@@ -11315,6 +11315,57 @@ try {
     .activity-photo-remove { opacity: 1; }
   }
 </style>
+
+<style id="activity-content-style">
+  .class-activity-compose-content { margin-top: 8px; }
+  .class-activity-content-input {
+    width: 100%;
+    min-height: 72px;
+    padding: 9px 11px;
+    border: 1px solid rgba(70, 99, 75, .2) !important;
+    border-radius: 8px;
+    background: #fffdf6 !important;
+    color: #344b3b;
+    font-family: var(--font-serif);
+    font-size: 12px;
+    line-height: 1.8;
+    resize: vertical;
+  }
+  .class-activity-content-input:focus {
+    outline: none;
+    border-color: rgba(70, 99, 75, .5) !important;
+    box-shadow: 0 0 0 3px rgba(70, 99, 75, .07);
+  }
+  .class-activity-content {
+    margin: 6px 0 0;
+    max-height: 260px;
+    overflow-y: auto;
+    color: #526a58;
+    font-family: var(--font-serif);
+    font-size: 11.5px;
+    line-height: 1.9;
+    letter-spacing: .015em;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    scrollbar-width: thin;
+  }
+  .class-activity-edit-row { align-items: flex-start !important; flex-wrap: wrap; }
+  .class-activity-edit-fields {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 100%;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .class-activity-edit-content {
+    min-height: 88px;
+    font-size: 11px;
+  }
+  @media (max-width: 760px) {
+    .class-activity-content-input { font-size: 13px; }
+    .class-activity-content { max-height: none; font-size: 12px; }
+  }
+</style>
 </head>
 
 <body>
@@ -12982,6 +13033,16 @@ try {
               />
               <button class="btn btn--gold" id="classActivityAddBtn" type="button">新增活动</button>
             </span>
+          </label>
+          <label class="class-activity-compose-field class-activity-compose-content" for="classActivityContentInput">
+            <span class="form-label">活动内容</span>
+            <textarea
+              class="form-control class-activity-content-input"
+              id="classActivityContentInput"
+              rows="3"
+              maxlength="2000"
+              placeholder="写下这次活动的内容、过程或想留下的记忆（可选）"
+            ></textarea>
           </label>
         </div>
 
@@ -18993,6 +19054,15 @@ async function updateActivity(id, title) {
   return normalizeActivity(result.data || {});
 }
 
+async function saveActivityContent(id, content) {
+  const clean = String(content || '').trim();
+  if (clean.length > 2000) {
+    throw makeClassOverviewError('ACTIVITY_CONTENT_LENGTH', '活动内容最多 2000 字。');
+  }
+  await classRpc('class_activity_content_save', { p_id: id, p_content: clean }, '保存活动内容');
+  return clean;
+}
+
 async function deleteActivity(id) {
   await classRpc('class_activity_delete', { p_id: id }, '删除活动');
   return true;
@@ -19074,6 +19144,7 @@ function normalizeActivity(raw) {
   return {
     id: source.id == null ? '' : String(source.id),
     title: typeof source.title === 'string' ? source.title : '未命名活动',
+    content: typeof source.content === 'string' ? source.content : '',
     image_url: imageUrls[0] || '',
     image_urls: imageUrls,
     created_at: typeof source.created_at === 'string' ? source.created_at : ''
@@ -19343,6 +19414,13 @@ function friendlyRemoteError(error) {
     titleWrap.append(label, title);
     main.appendChild(titleWrap);
 
+    if (activity.content) {
+      const content = document.createElement('p');
+      content.className = 'class-activity-content';
+      content.textContent = activity.content;
+      main.appendChild(content);
+    }
+
     if (isAdmin()) {
       const actions = document.createElement('div');
       actions.className = 'class-activity-actions';
@@ -19390,12 +19468,17 @@ function friendlyRemoteError(error) {
     if (!main || main.querySelector('.class-activity-edit-row')) return;
 
     const title = main.querySelector('.class-activity-title');
+    const contentEl = main.querySelector('.class-activity-content');
     const actions = main.querySelector('.class-activity-actions');
     if (title) title.hidden = true;
+    if (contentEl) contentEl.hidden = true;
     if (actions) actions.hidden = true;
 
     const row = document.createElement('div');
     row.className = 'class-activity-edit-row';
+
+    const fields = document.createElement('div');
+    fields.className = 'class-activity-edit-fields';
 
     const input = document.createElement('input');
     input.className = 'form-control class-activity-edit-input';
@@ -19403,6 +19486,14 @@ function friendlyRemoteError(error) {
     input.maxLength = 60;
     input.value = activity.title;
     input.setAttribute('aria-label', '修改活动标题');
+
+    const contentInput = document.createElement('textarea');
+    contentInput.className = 'form-control class-activity-content-input class-activity-edit-content';
+    contentInput.rows = 3;
+    contentInput.maxLength = 2000;
+    contentInput.value = activity.content || '';
+    contentInput.placeholder = '活动内容（可选）';
+    contentInput.setAttribute('aria-label', '修改活动内容');
 
     const save = document.createElement('button');
     save.type = 'button';
@@ -19417,30 +19508,38 @@ function friendlyRemoteError(error) {
     function restore() {
       row.remove();
       if (title) title.hidden = false;
+      if (contentEl) contentEl.hidden = false;
       if (actions) actions.hidden = false;
     }
 
     cancel.addEventListener('click', restore);
     save.addEventListener('click', async () => {
       const nextTitle = input.value.trim();
+      const nextContent = contentInput.value.trim();
       if (!nextTitle) {
         setStatus('活动标题不可为空。', 'error');
         input.focus();
         return;
       }
+      if (nextContent.length > 2000) {
+        setStatus('活动内容最多 2000 字。', 'error');
+        contentInput.focus();
+        return;
+      }
 
       save.disabled = true;
       cancel.disabled = true;
-      setStatus('正在保存活动标题…', 'loading');
+      setStatus('正在保存活动…', 'loading');
 
       try {
         const updated = await updateActivity(activity.id, nextTitle);
+        updated.content = await saveActivityContent(activity.id, nextContent);
         activities = activities
           .map((item) => (item.id === activity.id ? updated : item))
           .sort((a, b) => (Date.parse(b.created_at) || 0) - (Date.parse(a.created_at) || 0));
         writeOverviewCache({ activities });
         renderActivities();
-        setStatus('活动标题已更新。', 'ok');
+        setStatus('活动已更新。', 'ok');
       } catch (error) {
         save.disabled = false;
         cancel.disabled = false;
@@ -19449,7 +19548,8 @@ function friendlyRemoteError(error) {
       }
     });
 
-    row.append(input, save, cancel);
+    fields.append(input, contentInput);
+    row.append(fields, save, cancel);
     main.prepend(row);
     window.requestAnimationFrame(() => input.focus());
   }
@@ -19489,6 +19589,7 @@ function friendlyRemoteError(error) {
   async function addActivityFromForm() {
     if (!isAdmin() || !dom.activityTitleInput || !dom.addBtn) return;
     const title = dom.activityTitleInput.value.trim();
+    const content = dom.activityContentInput ? dom.activityContentInput.value.trim() : '';
     if (!title) {
       setStatus('请先输入活动标题。', 'error');
       dom.activityTitleInput.focus();
@@ -19501,11 +19602,13 @@ function friendlyRemoteError(error) {
 
     try {
       const created = await addActivity(title);
+      if (content) created.content = await saveActivityContent(created.id, content);
       activities = [created, ...activities]
         .filter(Boolean)
         .sort((a, b) => (Date.parse(b.created_at) || 0) - (Date.parse(a.created_at) || 0));
       writeOverviewCache({ activities });
       dom.activityTitleInput.value = '';
+      if (dom.activityContentInput) dom.activityContentInput.value = '';
       renderActivities();
       setStatus('活动已新增。', 'ok');
     } catch (error) {
@@ -19869,6 +19972,7 @@ function friendlyRemoteError(error) {
     dom.roleNote = byId('classInfoRoleNote');
     dom.composer = byId('classActivityComposer');
     dom.activityTitleInput = byId('classActivityTitleInput');
+    dom.activityContentInput = byId('classActivityContentInput');
     dom.addBtn = byId('classActivityAddBtn');
     dom.activityList = byId('classActivityList');
     dom.activityEmpty = byId('classActivityEmpty');
