@@ -11026,6 +11026,94 @@ try {
   }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/qweather-icons@1.3.2/font/qweather-icons.css">
+  <script src="https://unpkg.com/solarlunar/dist/solarlunar.min.js" defer></script>
+  <style id="sun-info-style">
+    /* 顶部实时信息栏：半透明磨砂玻璃 + 淡淡金边，与阳光国潮主题一致 */
+    .sun-info-bar {
+      position: sticky;
+      top: 10px;
+      z-index: 82;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(10px, 1.5vw, 18px);
+      width: max-content;
+      max-width: 100%;
+      margin: clamp(14px, 2.2vh, 24px) auto clamp(14px, 2.4vh, 24px);
+      padding: 9px clamp(14px, 2vw, 22px);
+      border-radius: 999px;
+      border: 1px solid rgba(184, 151, 87, .26);
+      background: rgba(255, 255, 255, .64);
+      -webkit-backdrop-filter: blur(14px) saturate(1.08);
+      backdrop-filter: blur(14px) saturate(1.08);
+      box-shadow:
+        0 12px 30px rgba(65, 82, 68, .09),
+        inset 0 1px 0 rgba(255, 255, 255, .8);
+      color: #3c564b;
+      font-family: "Songti SC", "STSong", "Noto Serif SC", serif;
+      font-size: clamp(11px, 1.08vw, 13.5px);
+      letter-spacing: .045em;
+      line-height: 1.35;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sun-info-bar .sun-clock { font-weight: 600; }
+    .sun-info-bar .sun-sep {
+      width: 1px;
+      height: 15px;
+      background: linear-gradient(180deg, transparent, rgba(157, 129, 78, .34), transparent);
+      flex: 0 0 auto;
+    }
+    .sun-info-bar .sun-weather {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+    .sun-info-bar .sun-weather-icon {
+      display: inline-block;
+      width: 1.25em;
+      height: 1.25em;
+      font-size: 1.55em;
+      line-height: 1;
+      color: #8d6a32;
+      text-align: center;
+      vertical-align: -.16em;
+    }
+    .sun-info-bar .sun-term {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 5px;
+    }
+    .sun-info-bar .sun-term-label {
+      font-size: .82em;
+      letter-spacing: .12em;
+      color: rgba(94, 116, 101, .68);
+    }
+    .sun-info-bar .sun-term strong {
+      font-weight: 600;
+      color: #6d5228;
+    }
+
+    @media (max-width: 680px) {
+      .sun-info-bar {
+        top: 6px;
+        gap: 6px;
+        margin: 8px auto 12px;
+        padding: 7px 10px;
+        font-size: clamp(9px, 2.3vw, 11px);
+        letter-spacing: 0;
+        width: 100%;
+        justify-content: center;
+      }
+      .sun-info-bar .sun-sep { height: 12px; }
+      .sun-info-bar .sun-term-label { display: none; }
+      .sun-info-bar .sun-weather { gap: 3px; }
+      .sun-info-bar .sun-weather-icon { font-size: 1.45em; width: 1.1em; }
+    }
+  </style>
 </head>
 
 <body>
@@ -11732,6 +11820,18 @@ try {
     <!-- ====================================================================
          页首
          ==================================================================== -->
+    <!-- 顶部实时信息：日期时间 / 天气 / 二十四节气（纯前端，失败自动降级） -->
+    <div class="sun-info-bar" id="sunInfoBar" role="status" aria-live="polite" aria-label="实时时间、天气与二十四节气">
+      <time class="sun-clock" id="sunClock">正在校准时间</time>
+      <span class="sun-sep" aria-hidden="true"></span>
+      <span class="sun-weather" title="实时天气">
+        <i class="sun-weather-icon" id="sunWeatherIcon" aria-hidden="true"></i>
+        <span id="sunWeatherTemp">天气获取中…</span>
+      </span>
+      <span class="sun-sep" aria-hidden="true"></span>
+      <span class="sun-term"><span class="sun-term-label">节气</span><strong id="sunTerm">--</strong></span>
+    </div>
+
     <header class="topbar">
       <div class="brand">
         <span class="brand-seal" aria-hidden="true">明</span>
@@ -21817,6 +21917,179 @@ function friendlyRemoteError(error) {
         burst(button.getAttribute('data-message-kind'), button);
       });
     }(buttons[b]));
+  }
+})();
+</script>
+<script id="sun-info-script">
+(function () {
+  var clock = document.getElementById('sunClock');
+  var termEl = document.getElementById('sunTerm');
+  var weatherIcon = document.getElementById('sunWeatherIcon');
+  var weatherTemp = document.getElementById('sunWeatherTemp');
+  if (!clock) return;
+
+  var WEEK = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+  var TERM_NAMES = ['小寒','大寒','立春','雨水','惊蛰','春分','清明','谷雨','立夏','小满','芒种','夏至','小暑','大暑','立秋','处暑','白露','秋分','寒露','霜降','立冬','小雪','大雪','冬至'];
+  var WEATHER_KEY = 'ming-sun-weather-v1';
+  var WEATHER_TTL = 30 * 60 * 1000;
+  var lastDayKey = '';
+  var termCache = {};
+
+  function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+  function updateClock() {
+    var now = new Date();
+    clock.textContent = now.getFullYear() + '年' + pad(now.getMonth() + 1) + '月' + pad(now.getDate()) + '日 ' +
+      WEEK[now.getDay()] + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+    var dayKey = now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate();
+    if (dayKey !== lastDayKey) {
+      lastDayKey = dayKey;
+      updateTerm(now);
+    }
+  }
+
+  // 通过 solarlunar.getTerm(y,n) 取得第 n 个节气的“日”，再拼出准确日期。
+  function termDates(year) {
+    if (termCache[year]) return termCache[year];
+    var result = [];
+    // unpkg 的 UMD 包把 API 挂在 default 上；同时兼容直接导出的版本。
+    var lib = window.solarLunar && (window.solarLunar.getTerm ? window.solarLunar :
+      (window.solarLunar.default && window.solarLunar.default.getTerm ? window.solarLunar.default : null));
+    if (!lib) {
+      return result;
+    }
+    for (var n = 1; n <= 24; n++) {
+      var day = lib.getTerm(year, n);
+      if (day > 0) {
+        result.push({ name: TERM_NAMES[n - 1], date: new Date(year, Math.ceil(n / 2) - 1, day) });
+      }
+    }
+    termCache[year] = result;
+    return result;
+  }
+
+  // 找到今天之前（含今天）最近的一个节气；今天正好交节时就显示当天节气。
+  function updateTerm(now) {
+    if (!termEl) return;
+    try {
+      var today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      var all = termDates(now.getFullYear() - 1).concat(termDates(now.getFullYear()));
+      var current = null;
+      for (var i = 0; i < all.length; i++) {
+        if (all[i].date.getTime() <= today) current = all[i];
+      }
+      termEl.textContent = current ? current.name : '--';
+    } catch (e) {
+      termEl.textContent = '--';
+    }
+  }
+
+  // Open-Meteo weather_code -> 和风天气图标 class。
+  function qweatherClass(code) {
+    if (code === 0) return 'qi-100';
+    if (code === 1) return 'qi-101';
+    if (code === 2) return 'qi-102';
+    if (code === 3) return 'qi-103';
+    if (code === 45 || code === 48) return 'qi-501';
+    if (code >= 51 && code <= 57) return 'qi-309';
+    if (code === 61) return 'qi-305';
+    if (code === 63) return 'qi-306';
+    if (code === 65) return 'qi-307';
+    if (code === 66 || code === 67) return 'qi-313';
+    if (code === 71) return 'qi-400';
+    if (code === 73) return 'qi-401';
+    if (code === 75) return 'qi-402';
+    if (code === 77) return 'qi-499';
+    if (code >= 80 && code <= 82) return 'qi-300';
+    if (code === 85 || code === 86) return 'qi-407';
+    if (code >= 95) return 'qi-302';
+    return 'qi-999';
+  }
+
+  function showWeather(temp, code) {
+    var value = Number(temp);
+    weatherTemp.textContent = isFinite(value) ? Math.round(value) + '°C' : '天气暂不可用';
+    if (isFinite(Number(code))) {
+      weatherIcon.className = 'sun-weather-icon ' + qweatherClass(Number(code));
+      weatherIcon.title = '天气代码 ' + code;
+    } else {
+      weatherIcon.className = 'sun-weather-icon';
+      weatherIcon.title = '';
+    }
+  }
+
+  function readWeatherCache() {
+    try {
+      var raw = localStorage.getItem(WEATHER_KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      if (!data || !data.ts || Date.now() - data.ts > WEATHER_TTL) return null;
+      if (typeof data.temp === 'undefined') return null;
+      return data;
+    } catch (e) { return null; }
+  }
+
+  function writeWeatherCache(temp, code, lat, lon) {
+    try {
+      localStorage.setItem(WEATHER_KEY, JSON.stringify({
+        ts: Date.now(), temp: temp, code: code, lat: lat, lon: lon
+      }));
+    } catch (e) { /* 隐私模式/空间不足时直接忽略 */ }
+  }
+
+  function fetchWeather(lat, lon) {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, 8000);
+    var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(lat) +
+      '&longitude=' + encodeURIComponent(lon) + '&current=temperature_2m,weather_code&timezone=auto';
+    fetch(url, { signal: ctrl.signal })
+      .then(function (res) {
+        if (!res.ok) throw new Error('weather HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        var cur = data && data.current;
+        if (!cur) throw new Error('weather empty');
+        showWeather(cur.temperature_2m, cur.weather_code);
+        writeWeatherCache(cur.temperature_2m, cur.weather_code, lat, lon);
+      })
+      .catch(function () {
+        // 定位/接口失败只降级文案，不抛错、不白屏。
+        weatherTemp.textContent = '天气获取中…';
+        weatherIcon.className = 'sun-weather-icon';
+      })
+      .finally(function () { clearTimeout(timer); });
+  }
+
+  function loadWeather() {
+    var cached = readWeatherCache();
+    if (cached) {
+      showWeather(cached.temp, cached.code);
+      return;
+    }
+    fetchWeather(39.9042, 116.4074); // 默认北京，先保证有内容；定位成功后再覆盖
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        var lat = pos.coords.latitude;
+        var lon = pos.coords.longitude;
+        fetchWeather(lat, lon);
+      },
+      function () { /* 用户拒绝定位：保留默认城市，不弹错误 */ },
+      { timeout: 6000, maximumAge: 10 * 60 * 1000 }
+    );
+  }
+
+  function init() {
+    updateClock();
+    setInterval(updateClock, 1000);
+    loadWeather();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
   }
 })();
 </script>
