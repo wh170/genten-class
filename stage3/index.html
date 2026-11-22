@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>夜尽天明 · 三段式开场演示</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold: #e8c37e;
+      --gold-bright: #ffe2a0;
+      --paper: #e8f4f8;
+      --ink: #1e3440;
+      --ink-soft: #526c76;
+      --splash-font: "Ma Shan Zheng", "STKaiti", "KaiTi", serif;
+      --serif: "Songti SC", "STSong", "Noto Serif SC", serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+      font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    }
+
+    body.main-open {
+      overflow: auto;
+    }
+
+    .stage {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    /* ============================================================
+       第一段：呼吸加载页
+       ============================================================ */
+    #loadingScreen {
+      z-index: 100;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 50% 46%, rgba(201, 158, 78, 0.10), transparent 36%),
+        #000;
+      cursor: default;
+    }
+
+    .loading-inner {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      justify-items: center;
+      gap: 30px;
+      transform: translateY(-2vh);
+    }
+
+    /* 呼吸环炸开成暖金圆幕，承接第二层 */
+    .loading-burst {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      z-index: 0;
+      width: 18vmin;
+      height: 18vmin;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0);
+      background: radial-gradient(circle at 50% 46%,
+        #fffdf5 0%, #f8ebcf 24%, #e6cd9c 48%, #c9a261 70%, #a37b45 100%);
+      box-shadow: 0 0 80px rgba(255, 229, 170, 0.35);
+      will-change: transform, opacity;
+    }
+
+    .loading-ring-wrap {
+      position: relative;
+      width: clamp(150px, 18vw, 220px);
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      will-change: transform;
+    }
+
+    .loading-ring {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      filter: drop-shadow(0 0 10px rgba(232, 195, 126, 0.32));
+    }
+
+    .loading-ring .ring-track {
+      fill: none;
+      stroke: rgba(232, 195, 126, 0.16);
+      stroke-width: 1.2;
+    }
+
+    .loading-ring .ring-progress {
+      fill: none;
+      stroke: var(--gold-bright);
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-dasharray: 289.03;
+      stroke-dashoffset: 289.03;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+
+    .loading-ring .ring-halo {
+      fill: none;
+      stroke: rgba(232, 195, 126, 0.52);
+      stroke-width: 0.75;
+      opacity: 0.4;
+      transform-box: fill-box;
+      transform-origin: center;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .loading-ring .halo-b {
+      stroke: rgba(255, 243, 214, 0.66);
+      stroke-width: 0.55;
+    }
+
+    .wipe-edge {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 120;
+      width: 1.5px;
+      opacity: 0;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255, 244, 214, 0), #fff6d8 28%, #d9b676 72%, rgba(255, 244, 214, 0));
+      box-shadow: 0 0 22px rgba(255, 226, 160, 0.72), 0 0 60px rgba(217, 182, 118, 0.28);
+      transform: translateX(0);
+    }
+
+    .loading-ring .ring-dot {
+      fill: var(--gold-bright);
+      opacity: 0;
+      filter: drop-shadow(0 0 6px rgba(255, 226, 160, 0.85));
+    }
+
+    .loading-seal {
+      position: absolute;
+      color: rgba(255, 226, 160, 0.76);
+      font-family: var(--serif);
+      font-size: clamp(15px, 1.6vw, 20px);
+      letter-spacing: 0.3em;
+      text-indent: 0.3em;
+    }
+
+    .loading-copy {
+      margin: 0;
+      color: rgba(255, 244, 218, 0.80);
+      font-family: var(--serif);
+      font-size: clamp(10px, 1vw, 12px);
+      letter-spacing: 0.32em;
+      text-indent: 0.32em;
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .loading-hint {
+      position: absolute;
+      left: 50%;
+      bottom: clamp(34px, 8vh, 74px);
+      margin: 0;
+      transform: translate(-50%, 8px);
+      color: rgba(255, 242, 211, 0.84);
+      font-family: var(--serif);
+      font-size: clamp(12px, 1.15vw, 15px);
+      letter-spacing: 0.24em;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7);
+    }
+
+    .loading-hint.is-ready {
+      pointer-events: auto;
+    }
+
+    .loading-hint::before,
+    .loading-hint::after {
+      content: "";
+      display: inline-block;
+      width: clamp(18px, 2.6vw, 38px);
+      height: 1px;
+      margin: 0 12px;
+      vertical-align: middle;
+      background: linear-gradient(90deg, transparent, rgba(232, 195, 126, 0.65));
+    }
+
+    .loading-hint::after {
+      background: linear-gradient(90deg, rgba(232, 195, 126, 0.65), transparent);
+    }
+
+    /* ============================================================
+       第二段：破屏屏保
+       ============================================================ */
+    #splashScreen {
+      z-index: 50;
+      display: none;
+      opacity: 0;
+      background: #07110f;
+      cursor: pointer;
+      isolation: isolate;
+    }
+
+    .splash-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background-image: url("./bg.jpg");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      transform: scale(1.015);
+    }
+
+    .splash-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(3, 10, 13, 0.24) 0%, transparent 28%, transparent 66%, rgba(3, 9, 12, 0.68) 100%),
+        linear-gradient(90deg, rgba(3, 9, 12, 0.22) 0%, transparent 42%, rgba(3, 9, 12, 0.10) 100%);
+    }
+
+    .splash-hand-wrap {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .splash-hand {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      pointer-events: none;
+      filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.42));
+    }
+
+    .shards {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .shard {
+      position: absolute;
+      width: var(--w, 18px);
+      height: var(--h, 26px);
+      border: 1px solid rgba(255, 255, 255, 0.62);
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.34), rgba(168, 211, 218, 0.10) 48%, rgba(255, 255, 255, 0.22));
+      box-shadow:
+        inset 0 0 8px rgba(255, 255, 255, 0.30),
+        0 3px 12px rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(1.2px);
+      clip-path: polygon(12% 0%, 100% 15%, 86% 100%, 0% 78%);
+      opacity: 0;
+      transform-origin: 50% 50%;
+      will-change: transform, opacity;
+    }
+
+    .splash-quote {
+      position: absolute;
+      left: 50%;
+      top: clamp(30px, 7vh, 74px);
+      z-index: 6;
+      display: flex;
+      direction: rtl;
+      gap: clamp(6px, 1vw, 16px);
+      transform: translateX(-50%);
+      color: var(--gold-bright);
+      font-family: var(--splash-font);
+      text-shadow:
+        0 4px 20px rgba(30, 14, 0, 0.82),
+        0 0 30px rgba(255, 188, 84, 0.34),
+        0 1px 0 rgba(80, 48, 8, 0.55);
+    }
+
+    .splash-quote span {
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+      font-size: clamp(48px, 5.6vw, 100px);
+      line-height: 1.04;
+      letter-spacing: 0.08em;
+    }
+
+    .splash-hint {
+      position: absolute;
+      left: 50%;
+      bottom: clamp(26px, 4.6vh, 52px);
+      z-index: 7;
+      margin: 0;
+      transform: translateX(-50%);
+      color: rgba(255, 244, 218, 0.94);
+      font-family: var(--serif);
+      font-size: clamp(12px, 1.1vw, 15px);
+      letter-spacing: 0.24em;
+      white-space: nowrap;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.78);
+      animation: hintBreathe 2.8s ease-in-out infinite;
+    }
+
+    .splash-hint::before,
+    .splash-hint::after {
+      content: "";
+      display: inline-block;
+      width: clamp(18px, 2.6vw, 42px);
+      height: 1px;
+      margin: 0 12px;
+      vertical-align: middle;
+      background: linear-gradient(90deg, transparent, rgba(255, 226, 160, 0.70));
+    }
+
+    .splash-hint::after {
+      background: linear-gradient(90deg, rgba(255, 226, 160, 0.70), transparent);
+    }
+
+    @keyframes hintBreathe {
+      0%, 100% { opacity: 0.56; }
+      50% { opacity: 1; }
+    }
+
+    /* ============================================================
+       第三段：正式主页占位
+       ============================================================ */
+    #mainContent {
+      position: relative;
+      z-index: 10;
+      display: none;
+      min-height: 100vh;
+      overflow: visible;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 14% 8%, rgba(255, 255, 255, 0.9), transparent 34%),
+        radial-gradient(circle at 84% 16%, rgba(215, 237, 242, 0.8), transparent 36%),
+        #e8f4f8;
+    }
+
+    .main-inner {
+      width: min(1320px, 100%);
+      margin: 0 auto;
+      padding: clamp(24px, 4vw, 62px) clamp(16px, 3vw, 34px);
+      perspective: 1200px;
+      perspective-origin: 50% 42%;
+    }
+
+    .main-kicker {
+      margin: 0 0 12px;
+      color: var(--ink-soft);
+      font-size: 10px;
+      letter-spacing: 0.26em;
+    }
+
+    .main-title {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(35px, 6vw, 84px);
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      line-height: 1.1;
+    }
+
+    .main-sub {
+      margin: 14px 0 0;
+      color: var(--ink-soft);
+      font-size: clamp(12px, 1.2vw, 15px);
+      letter-spacing: 0.09em;
+    }
+
+    /* 未来接入3D鼠标视差交互的容器 */
+    .module-stage {
+      display: grid;
+      grid-template-columns: 1.05fr 0.9fr 1.05fr;
+      gap: 16px;
+      margin-top: clamp(30px, 5vw, 68px);
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    .module {
+      --parallax-x: 0px;
+      --parallax-y: 0px;
+      --parallax-depth: 1;
+      position: relative;
+      min-height: clamp(260px, 30vw, 360px);
+      padding: 22px;
+      overflow: visible;
+      transform-style: preserve-3d;
+      will-change: transform, opacity;
+      border: 1px solid rgba(255, 255, 255, 0.88);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.54);
+      box-shadow: 0 18px 50px rgba(47, 85, 95, 0.10);
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      transform: translateY(46px);
+    }
+
+    .module::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border: 1px solid rgba(99, 133, 141, 0.16);
+      border-radius: 14px;
+      pointer-events: none;
+    }
+
+    .module-eyebrow {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      color: #64818a;
+      font-size: 9px;
+      letter-spacing: 0.22em;
+    }
+
+    .module-name {
+      position: relative;
+      z-index: 1;
+      margin: 8px 0 0;
+      font-family: var(--serif);
+      font-size: clamp(23px, 2.2vw, 31px);
+      font-weight: 500;
+      color: #28424a;
+    }
+
+    .module-note {
+      position: absolute;
+      left: 22px;
+      bottom: 20px;
+      z-index: 1;
+      margin: 0;
+      color: #79939b;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+    }
+
+    .module-mark {
+      position: absolute;
+      right: 22px;
+      top: 22px;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(178, 143, 79, 0.38);
+      border-radius: 50%;
+      color: rgba(143, 112, 58, 0.76);
+      font-family: var(--serif);
+      font-size: 16px;
+    }
+
+    .main-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 32px;
+      color: rgba(57, 85, 95, 0.54);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+    }
+
+    /* 单张卡牌悬停时从卡片模块里浮起，做出真实前后层次 */
+    .demo-card-stack {
+      position: absolute;
+      right: 26px;
+      bottom: 24px;
+      z-index: 2;
+      width: 112px;
+      height: 96px;
+      transform-style: preserve-3d;
+    }
+
+    .demo-card-stack .card {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      width: 58px;
+      height: 78px;
+      border: 1px solid rgba(167, 135, 78, 0.45);
+      border-radius: 8px;
+      color: rgba(52, 80, 62, 0.88);
+      background: linear-gradient(155deg, rgba(255, 253, 244, 0.96), rgba(235, 229, 208, 0.9));
+      box-shadow: 0 10px 22px rgba(45, 71, 76, 0.16);
+      font-family: var(--serif);
+      font-size: 17px;
+      transform-style: preserve-3d;
+      transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease;
+      will-change: transform;
+      cursor: default;
+    }
+
+    .demo-card-stack .card-a {
+      left: 0;
+      top: 8px;
+      transform: translateZ(18px) rotate(-8deg);
+    }
+
+    .demo-card-stack .card-b {
+      left: 27px;
+      top: 3px;
+      transform: translateZ(28px) rotate(2deg);
+    }
+
+    .demo-card-stack .card-c {
+      left: 54px;
+      top: 11px;
+      transform: translateZ(38px) rotate(9deg);
+    }
+
+    /* 以后真实生成的卡牌只要放在 .module-cards 里、带 .card 类，也会继承这套浮起效果 */
+    .module-cards .card {
+      transform-style: preserve-3d;
+    }
+
+    .module-cards .card:hover {
+      z-index: 6;
+      transform: translateZ(50px) scale(1.05);
+      box-shadow:
+        0 24px 44px rgba(39, 65, 73, 0.26),
+        0 0 0 1px rgba(196, 157, 92, 0.7),
+        0 0 24px rgba(230, 195, 124, 0.48);
+    }
+
+    .demo-card-stack .card:hover {
+      z-index: 6;
+      transform: translateZ(92px) translateY(-8px) scale(1.06) rotate(0deg);
+      box-shadow:
+        0 26px 46px rgba(39, 65, 73, 0.28),
+        0 0 0 1px rgba(196, 157, 92, 0.72),
+        0 0 26px rgba(230, 195, 124, 0.5);
+    }
+
+    @media (max-width: 820px) {
+      .module-stage {
+        grid-template-columns: 1fr;
+      }
+
+      .module {
+        min-height: 190px;
+      }
+
+      .main-footer {
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .splash-bg {
+        background-image: url("./bg-mobile.jpg");
+      }
+    }
+
+    @media (max-width: 600px) {
+      .loading-hint {
+        font-size: 11px;
+        letter-spacing: 0.15em;
+      }
+
+      .loading-hint::before,
+      .loading-hint::after {
+        width: 14px;
+        margin: 0 7px;
+      }
+
+      .splash-quote {
+        top: 5vh;
+        gap: 2px;
+      }
+
+      .splash-quote span {
+        font-size: clamp(32px, 9.4vw, 44px);
+        letter-spacing: 0.04em;
+      }
+
+      .splash-hint {
+        font-size: 11px;
+        letter-spacing: 0.12em;
+      }
+
+      .splash-hint::before,
+      .splash-hint::after {
+        width: 12px;
+        margin: 0 6px;
+      }
+
+      .shard {
+        backdrop-filter: blur(0.8px);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .splash-hint {
+        animation: none;
+      }
+
+      .shard {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================
+       第一层：呼吸加载页
+       ============================================================ -->
+  <section id="loadingScreen" class="stage" aria-label="加载">
+    <div class="loading-inner">
+      <div class="loading-ring-wrap" id="loadingRingWrap">
+        <svg class="loading-ring" viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="ring-track" cx="60" cy="60" r="46"></circle>
+          <circle class="ring-progress" id="ringProgress" cx="60" cy="60" r="46"></circle>
+          <circle class="ring-halo halo-a" cx="60" cy="60" r="55"></circle>
+          <circle class="ring-halo halo-b" cx="60" cy="60" r="38"></circle>
+          <circle class="ring-dot" id="ringDot" cx="60" cy="14" r="2.2"></circle>
+        </svg>
+        <span class="loading-seal">明</span>
+      </div>
+      <p class="loading-copy" id="loadingCopy">时 空 正 在 展 开</p>
+    </div>
+    <div class="loading-burst" id="loadingBurst" aria-hidden="true"></div>
+    <p class="loading-hint" id="loadingHint">轻触屏幕，开启时空</p>
+  </section>
+
+  <div class="wipe-edge" id="wipeEdge" aria-hidden="true"></div>
+
+  <!-- ============================================================
+       第二层：破屏屏保
+       ============================================================ -->
+  <section id="splashScreen" class="stage" aria-label="开场">
+    <div class="splash-bg" aria-hidden="true"></div>
+    <div class="shards" id="shards" aria-hidden="true"></div>
+    <picture class="splash-hand-wrap">
+      <source media="(max-width: 760px)" srcset="./hand-mobile.png">
+      <img class="splash-hand" src="./hand.png" alt="" aria-hidden="true">
+    </picture>
+    <div class="splash-quote" aria-label="数风流人物，还看今朝">
+      <span>数风流人物</span>
+      <span>还看今朝</span>
+    </div>
+    <p class="splash-hint">轻触屏幕，开启我们的故事</p>
+  </section>
+
+  <!-- ============================================================
+       第三层：正式主页占位
+       ============================================================ -->
+  <main id="mainContent" aria-label="主页占位">
+    <div class="main-inner">
+      <p class="main-kicker">HONGTONG · ROOTED TOGETHER · STAGE 03</p>
+      <h1 class="main-title">主页正在建设中...</h1>
+      <p class="main-sub">古树、生肖与山河，即将在这里重新展开。</p>
+
+      <!-- 未来接入3D鼠标视差交互的容器 -->
+      <div class="module-stage" id="moduleStage">
+        <div class="module module-tree" data-parallax-depth="1">
+          <p class="module-eyebrow">十二生肖 · 同根溯源</p>
+          <h2 class="module-name">古树</h2>
+          <span class="module-mark" aria-hidden="true">树</span>
+          <p class="module-note">module-tree · 待接入</p>
+        </div>
+        <div class="module module-cards" data-parallax-depth="1.08">
+          <p class="module-eyebrow">十二生肖 · 各归其枝</p>
+          <h2 class="module-name">生肖卡牌</h2>
+          <span class="module-mark" aria-hidden="true">肖</span>
+          <p class="module-note">module-cards · 待接入</p>
+          <div class="demo-card-stack" aria-hidden="true">
+            <span class="card card-a">子</span>
+            <span class="card card-b">丑</span>
+            <span class="card card-c">寅</span>
+          </div>
+        </div>
+        <div class="module module-map" data-parallax-depth="1.14">
+          <p class="module-eyebrow">山河同脉 · 籍贯分布</p>
+          <h2 class="module-name">五湖四海</h2>
+          <span class="module-mark" aria-hidden="true">图</span>
+          <p class="module-note">module-map · 待接入</p>
+        </div>
+      </div>
+
+      <footer class="main-footer">
+        <span>夜尽天明 · 24级大数据二班班级群像</span>
+        <span>第三阶段占位页 · 尚未接入正式内容</span>
+      </footer>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      var loading = document.getElementById("loadingScreen");
+      var splash = document.getElementById("splashScreen");
+      var wipeEdge = document.getElementById("wipeEdge");
+      var main = document.getElementById("mainContent");
+      var hint = document.getElementById("loadingHint");
+      var copy = document.getElementById("loadingCopy");
+      var ring = document.getElementById("ringProgress");
+      var dot = document.getElementById("ringDot");
+      var ringWrap = document.getElementById("loadingRingWrap");
+      var shardsLayer = document.getElementById("shards");
+      var stage = document.getElementById("moduleStage");
+
+      var loadingReady = false;
+      var phase = "loading";
+      var shardEls = [];
+
+      var hasGsap = typeof window.gsap !== "undefined";
+      if (!hasGsap) {
+        document.documentElement.classList.add("no-gsap");
+      }
+
+      function show(el) {
+        el.style.display = el === main ? "block" : "grid";
+      }
+
+      function hide(el) {
+        el.style.display = "none";
+      }
+
+      // 第一层：用 stroke-dashoffset 画圆环，等价 DrawSVG 的效果。
+      function startLoading() {
+        if (!hasGsap) {
+          ring.style.strokeDashoffset = "0";
+          copy.style.opacity = "1";
+          copy.style.transform = "none";
+          hint.style.opacity = "1";
+          hint.style.transform = "translate(-50%, 0)";
+          hint.classList.add("is-ready");
+          loadingReady = true;
+          return;
+        }
+
+        gsap.to(ring, {
+          strokeDashoffset: 0,
+          duration: 2.5,
+          ease: "power2.inOut",
+          onUpdate: updateDot,
+          onComplete: function () {
+            dot.style.opacity = "1";
+            gsap.to(dot, {
+              opacity: 0,
+              repeat: -1,
+              yoyo: true,
+              duration: 1.1,
+              ease: "sine.inOut"
+            });
+            gsap.to(copy, {
+              opacity: 1,
+              y: 0,
+              duration: 0.9,
+              ease: "power2.out"
+            });
+            gsap.to(hint, {
+              opacity: 1,
+              y: 0,
+              duration: 0.9,
+              ease: "power2.out",
+              onComplete: function () {
+                loadingReady = true;
+                hint.classList.add("is-ready");
+              }
+            });
+          }
+        });
+
+        gsap.to(ringWrap, {
+          scale: 1.045,
+          duration: 2.4,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut"
+        });
+
+        // 双细环错相呼吸：一快一慢，像两次心跳叠在一起
+        gsap.to(".halo-a", {
+          attr: { r: 66 },
+          opacity: 0.16,
+          duration: 2.9,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut"
+        });
+        gsap.to(".halo-b", {
+          attr: { r: 49 },
+          opacity: 0.12,
+          duration: 2.1,
+          repeat: -1,
+          yoyo: true,
+          delay: 0.55,
+          ease: "sine.inOut"
+        });
+      }
+
+      function updateDot() {
+        var total = 289.03;
+        var progress = 1 - (parseFloat(ring.style.strokeDashoffset || total) / total);
+        var angle = -90 + progress * 360;
+        var rad = angle * Math.PI / 180;
+        dot.setAttribute("cx", 60 + 46 * Math.cos(rad));
+        dot.setAttribute("cy", 60 + 46 * Math.sin(rad));
+      }
+
+      function enterSplash() {
+        if (phase !== "loading" || !loadingReady) return;
+        phase = "transition";
+
+        var burst = document.getElementById("loadingBurst");
+
+        if (!hasGsap) {
+          hide(loading);
+          show(splash);
+          splash.style.opacity = "1";
+          phase = "splash";
+          startShards();
+          return;
+        }
+
+        gsap.killTweensOf(ringWrap);
+
+        // 参考录屏：黑场保留，画面从左往右“收走”，细金线就是收走的边缘。
+        show(splash);
+        gsap.set(splash, { opacity: 1, scale: 1.035, transformOrigin: "50% 50%" });
+        gsap.set(loading, {
+          clipPath: "inset(0% 0% 0% 0%)",
+          webkitClipPath: "inset(0% 0% 0% 0%)"
+        });
+        gsap.set(wipeEdge, { x: 0, opacity: 0, display: "block" });
+
+        gsap.timeline({
+          defaults: { overwrite: "auto" }
+        })
+          .to([loadingCopy, loadingHint], {
+            opacity: 0,
+            duration: 0.3,
+            ease: "power2.in"
+          }, 0)
+          .to(ringWrap, {
+            scale: 1.18,
+            opacity: 0,
+            duration: 0.5,
+            ease: "power2.in"
+          }, 0)
+          .to(wipeEdge, {
+            opacity: 0.9,
+            duration: 0.16,
+            ease: "power1.out"
+          }, 0.08)
+          .to(loading, {
+            clipPath: "inset(0% 0% 0% 100%)",
+            webkitClipPath: "inset(0% 0% 0% 100%)",
+            duration: 1.08,
+            ease: "power3.inOut"
+          }, 0.12)
+          .to(wipeEdge, {
+            x: function () { return window.innerWidth; },
+            duration: 1.08,
+            ease: "power3.inOut"
+          }, 0.12)
+          .to(wipeEdge, {
+            opacity: 0,
+            duration: 0.22,
+            ease: "power1.in"
+          }, 1.08)
+          .to(splash, {
+            scale: 1,
+            duration: 1.2,
+            ease: "power2.out"
+          }, 0.22)
+          .call(function () {
+            hide(loading);
+          }, null, 1.28)
+          .call(function () {
+            phase = "splash";
+            startShards();
+          }, null, 1.32);
+      }
+
+      // 第二层：20 个玻璃碎片，围绕左手生成，缓慢向左飘。
+      function startShards() {
+        if (!hasGsap || shardsLayer.childElementCount) return;
+
+        for (var i = 0; i < 20; i++) {
+          var el = document.createElement("span");
+          el.className = "shard";
+          var size = 8 + Math.random() * 17;
+          el.style.setProperty("--w", size.toFixed(1) + "px");
+          el.style.setProperty("--h", (size * (0.8 + Math.random() * 0.8)).toFixed(1) + "px");
+          var isMobile = window.matchMedia("(max-width: 760px)").matches;
+          var leftBase = isMobile ? 6 : 7;
+          var leftSpan = isMobile ? 38 : 25;
+          var topBase = isMobile ? 52 : 38;
+          var topSpan = isMobile ? 28 : 38;
+          el.style.left = (leftBase + Math.random() * leftSpan) + "%";
+          el.style.top = (topBase + Math.random() * topSpan) + "%";
+          shardsLayer.appendChild(el);
+          shardEls.push(el);
+
+          var duration = 9 + Math.random() * 7;
+          var delay = Math.random() * 7;
+
+          gsap.set(el, {
+            x: 0,
+            y: 0,
+            rotation: -35 + Math.random() * 70,
+            scale: 0.62 + Math.random() * 0.45,
+            opacity: 0
+          });
+
+          gsap.timeline({
+            repeat: -1,
+            delay: delay
+          })
+            .to(el, {
+              opacity: 0.62,
+              duration: 0.75,
+              ease: "power1.out"
+            })
+            .to(el, {
+              x: -(160 + Math.random() * 230),
+              y: (-55 + Math.random() * 125),
+              rotation: (Math.random() > 0.5 ? 1 : -1) * (150 + Math.random() * 230),
+              opacity: 0,
+              duration: duration,
+              ease: "none"
+            }, 0.35);
+        }
+      }
+
+      // ============================================================
+      // 第三层：3D 鼠标视差
+      // 父层透视 → 舞台轻微 rotateX/rotateY → 三个模块不同 x/y/z 位移
+      // ============================================================
+      var parallax = null;
+
+      function initParallax() {
+        if (!hasGsap || !window.matchMedia("(hover: hover) and (pointer: fine) and (min-width: 821px)").matches) {
+          return;
+        }
+
+        var stage = document.querySelector(".module-stage");
+        var tree = document.querySelector(".module-tree");
+        var cards = document.querySelector(".module-cards");
+        var map = document.querySelector(".module-map");
+        if (!stage || !tree || !cards || !map) return;
+
+        // 三个模块在同一舞台，但有前后层次：古树最前，地图最后。
+        var layers = [
+          { el: tree, x: -18, y: -12, z: 50 },
+          { el: cards, x: -10, y: -7, z: 0 },
+          { el: map, x: 5, y: 4, z: -50 }
+        ];
+
+        // 保留入场时的 y=46，等 enterMain 再统一滑入。
+        layers.forEach(function (layer) {
+          gsap.set(layer.el, { z: layer.z, y: 46, transformPerspective: 1200 });
+        });
+
+        var rotateXTo = gsap.quickTo(stage, "rotationX", { duration: 0.9, ease: "power3.out" });
+        var rotateYTo = gsap.quickTo(stage, "rotationY", { duration: 0.9, ease: "power3.out" });
+        var xTos = layers.map(function (layer) {
+          return gsap.quickTo(layer.el, "x", { duration: 0.95, ease: "power3.out" });
+        });
+        var yTos = layers.map(function (layer) {
+          return gsap.quickTo(layer.el, "y", { duration: 0.95, ease: "power3.out" });
+        });
+
+        function onMove(event) {
+          if (!document.body.classList.contains("main-open")) return;
+          var nx = (event.clientX / window.innerWidth - 0.5) * 2;
+          var ny = (event.clientY / window.innerHeight - 0.5) * 2;
+          // 最大倾斜 6°，保持克制，不让人晕。
+          rotateXTo(-ny * 5);
+          rotateYTo(nx * 6);
+          layers.forEach(function (layer, index) {
+            xTos[index](nx * layer.x);
+            yTos[index](ny * layer.y);
+          });
+        }
+
+        function reset() {
+          rotateXTo(0);
+          rotateYTo(0);
+          xTos.forEach(function (to) { to(0); });
+          yTos.forEach(function (to) { to(0); });
+        }
+
+        window.addEventListener("mousemove", onMove, { passive: true });
+        window.addEventListener("mouseout", function (event) {
+          if (!event.relatedTarget) reset();
+        });
+        window.addEventListener("blur", reset);
+        document.addEventListener("mouseleave", reset);
+
+        parallax = { reset: reset, layers: layers, stage: stage };
+      }
+
+      function enterMain() {
+        if (phase !== "splash") return;
+        phase = "main";
+
+        if (!hasGsap) {
+          hide(splash);
+          show(main);
+          main.style.opacity = "1";
+          document.body.classList.add("main-open");
+          var modules = document.querySelectorAll(".module");
+          for (var i = 0; i < modules.length; i++) {
+            modules[i].style.opacity = "1";
+            modules[i].style.transform = "none";
+          }
+          return;
+        }
+
+        gsap.to(splash, {
+          opacity: 0,
+          scale: 1.035,
+          filter: "blur(5px)",
+          duration: 0.9,
+          ease: "power2.inOut",
+          onComplete: function () {
+            hide(splash);
+            show(main);
+            main.style.opacity = "1";
+            document.body.classList.add("main-open");
+
+            gsap.set(main, { opacity: 1 });
+            var modules = document.querySelectorAll(".module");
+            gsap.to(modules, {
+              opacity: 1,
+              y: 0,
+              duration: 1.0,
+              stagger: 0.14,
+              ease: "power3.out"
+            });
+          }
+        });
+      }
+
+      // 第一层点击：只有圆环完成、提示出现后才允许进入第二层。
+      loading.addEventListener("click", enterSplash);
+      loading.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" || event.key === " ") enterSplash();
+      });
+
+      // 第二层点击：淡出后进入第三层。
+      splash.addEventListener("click", enterMain);
+      splash.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" || event.key === " ") enterMain();
+      });
+
+      initParallax();
+
+      // 防止空格滚动，也允许键盘推进。
+      document.addEventListener("keydown", function (event) {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        if (phase === "loading") enterSplash();
+        else if (phase === "splash") enterMain();
+      });
+
+      // 初始只显示第一层。
+      hide(splash);
+      hide(main);
+      startLoading();
+    })();
+  </script>
+</body>
+</html>
