@@ -11212,7 +11212,13 @@ try {
       window.__stageLoaderForceExit();
     }
   }, { capture: true });
-  /* 保底：页面完全加载后仍然没人点，也不让黑场永远卡住。 */
+  /* 加载环走完后自动掀开，避免“动画结束了但后面什么都没有”。
+     留 4.2 秒给用户看清标题；点击仍然可以随时提前进入。 */
+  window.setTimeout(function () {
+    if (loader.style.display !== 'none' && getComputedStyle(loader).display !== 'none') {
+      window.__stageLoaderForceExit();
+    }
+  }, 4200);
   window.addEventListener('load', function () {
     window.setTimeout(function () {
       if (loader.style.display !== 'none' && getComputedStyle(loader).display !== 'none') {
