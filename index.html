@@ -10736,6 +10736,11 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
     user-select: none;
   }
   body.stage-loader-open { overflow: hidden !important; }
+  /* 未登录时：登录界面就是第一屏，黑场加载与开屏都先隐藏 */
+  html.stage-login-first #stageLoader,
+  html.stage-login-first #splashScreen { display: none !important; }
+  html.stage-login-first #loginOverlay { display: flex !important; }
+  html.stage-login-first body { overflow: hidden; }
   #stageLoader.is-ready { cursor: pointer; }
   #stageLoader:focus { outline: none; }
   #stageLoader .stage-loader-inner {
@@ -10883,6 +10888,13 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
     #stageLoader .stage-loader-edge { display: none; }
   }
 </style>
+<script id="stage-login-first-script">
+try {
+  if (!window.localStorage.getItem('hongtong-bighuai-class-v1:auth-token')) {
+    document.documentElement.classList.add('stage-login-first');
+  }
+} catch (e) {}
+</script>
 </head>
 
 <body>
@@ -21434,6 +21446,10 @@ function friendlyRemoteError(error) {
 (function () {
   var loader = document.getElementById("stageLoader");
   if (!loader) return;
+  if (document.documentElement.classList.contains("stage-login-first")) {
+    loader.style.display = "none";
+    return;
+  }
   var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var ready = false;
   var exiting = false;
