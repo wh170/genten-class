@@ -20102,6 +20102,10 @@ function friendlyRemoteError(error) {
   var busy = false;
   var stopped = false;
   var lastSignature = '';
+  var patchUnavailable = false;
+  var snapshotMembers = null;
+  var snapshotTeachers = null;
+  var patchReloadPending = false;
 
   function readJSON(key, fallback) {
     try {
@@ -20123,6 +20127,111 @@ function friendlyRemoteError(error) {
   function getTeachers() {
     var a = readJSON(KEYS.teachers, []);
     return Array.isArray(a) ? a : [];
+  }
+  function clone(value) {
+    return value == null ? value : JSON.parse(JSON.stringify(value));
+  }
+  function recordId(item) {
+    return item && item.id != null ? String(item.id) : '';
+  }
+  function mapById(list) {
+    var map = Object.create(null);
+    if (Array.isArray(list)) {
+      for (var i = 0; i < list.length; i++) {
+        var id = recordId(list[i]);
+        if (id) map[id] = list[i];
+      }
+    }
+    return map;
+  }
+  function recordJson(item) {
+    return JSON.stringify(item);
+  }
+  function setSnapshot(members, teachers) {
+    snapshotMembers = clone(Array.isArray(members) ? members : []);
+    snapshotTeachers = clone(Array.isArray(teachers) ? teachers : []);
+  }
+  function markSnapshot(op) {
+    var list = op.collection === 'members' ? snapshotMembers : snapshotTeachers;
+    if (!Array.isArray(list)) return;
+    var idx = -1;
+    for (var i = 0; i < list.length; i++) {
+      if (recordId(list[i]) === op.id) { idx = i; break; }
+    }
+    if (op.op === 'delete') {
+      if (idx >= 0) list.splice(idx, 1);
+    } else if (idx >= 0) {
+      list[idx] = clone(op.item);
+    } else {
+      list.push(clone(op.item));
+    }
+  }
+  function buildPendingOps() {
+    var ops = [];
+    var unpatchable = false;
+    function collect(collection, current, snapshot) {
+      if (!Array.isArray(snapshot)) return;
+      var currentMap = mapById(current);
+      var snapshotMap = mapById(snapshot);
+      var ids = Object.keys(currentMap);
+      for (var i = 0; i < ids.length; i++) {
+        var id = ids[i];
+        var item = currentMap[id];
+        if (!recordId(item)) { unpatchable = true; continue; }
+        if (!snapshotMap[id] || recordJson(snapshotMap[id]) !== recordJson(item)) {
+          ops.push({ collection: collection, op: 'upsert', id: id, item: clone(item) });
+        }
+      }
+      var oldIds = Object.keys(snapshotMap);
+      for (var j = 0; j < oldIds.length; j++) {
+        if (!currentMap[oldIds[j]]) {
+          ops.push({ collection: collection, op: 'delete', id: oldIds[j] });
+        }
+      }
+    }
+    collect('members', getMembers(), snapshotMembers);
+    collect('teachers', getTeachers(), snapshotTeachers);
+    return { ops: ops, unpatchable: unpatchable };
+  }
+  function pendingDirty() {
+    var pending = buildPendingOps();
+    var dirty = {
+      members: { upsert: Object.create(null), delete: Object.create(null) },
+      teachers: { upsert: Object.create(null), delete: Object.create(null) }
+    };
+    for (var i = 0; i < pending.ops.length; i++) {
+      var op = pending.ops[i];
+      dirty[op.collection][op.op === 'upsert' ? 'upsert' : 'delete'][op.id] = true;
+    }
+    return { ops: pending.ops, dirty: dirty, unpatchable: pending.unpatchable };
+  }
+  function mergeRemoteArray(remoteList, localList, dirtySet) {
+    var remote = Array.isArray(remoteList) ? remoteList : [];
+    var local = Array.isArray(localList) ? localList : [];
+    var localMap = mapById(local);
+    var out = [];
+    var seen = Object.create(null);
+    for (var i = 0; i < remote.length; i++) {
+      var id = recordId(remote[i]);
+      if (!id) { out.push(remote[i]); continue; }
+      if (dirtySet.delete[id]) continue;
+      if (dirtySet.upsert[id]) {
+        if (localMap[id]) { out.push(localMap[id]); seen[id] = true; }
+        continue;
+      }
+      out.push(remote[i]);
+      seen[id] = true;
+    }
+    for (var j = 0; j < local.length; j++) {
+      var lid = recordId(local[j]);
+      if (!lid || seen[lid] || dirtySet.delete[lid]) continue;
+      if (dirtySet.upsert[lid]) { out.push(local[j]); seen[lid] = true; }
+    }
+    return out;
+  }
+  function isMissingPatchRpc(error) {
+    var text = String(error && error.message ? error.message : error);
+    return /HTTP 404|PGRST202/.test(text);
   }
   function signature() {
     return JSON.stringify({ m: getMembers(), t: getTeachers() });
@@ -20171,7 +20280,83 @@ function friendlyRemoteError(error) {
       p_teachers: getTeachers()
     });
     if (ret && ret.updated_at) setMeta(ret.updated_at);
+    setSnapshot(getMembers(), getTeachers());
     lastSignature = signature();
+  }
+  async function mergeRemoteConflict() {
+    var token = getToken();
+    var remote = await rpc('class_state_get', { p_token: token });
+    if (!remote || remote.empty) throw new Error('云端名册为空，暂不能合并');
+    var pending = pendingDirty();
+    var remoteMembers = Array.isArray(remote.members) ? remote.members : [];
+    var remoteTeachers = Array.isArray(remote.teachers) ? remote.teachers : [];
+    var mergedMembers = mergeRemoteArray(remoteMembers, getMembers(), pending.dirty.members);
+    var mergedTeachers = mergeRemoteArray(remoteTeachers, getTeachers(), pending.dirty.teachers);
+    writeState(mergedMembers, mergedTeachers);
+    setMeta(remote.updated_at);
+    setSnapshot(remoteMembers, remoteTeachers);
+    patchReloadPending = true;
+  }
+  async function pushAdminChanges() {
+    if (patchUnavailable) {
+      await pushAll();
+      return { reload: false };
+    }
+    for (var attempt = 0; attempt < 4; attempt++) {
+      var pending = buildPendingOps();
+      if (pending.unpatchable) {
+        await pushAll();
+        return { reload: false };
+      }
+      if (!pending.ops.length) {
+        lastSignature = signature();
+        return { reload: patchReloadPending };
+      }
+      var m = meta();
+      var expected = m && m.updated_at ? m.updated_at : '';
+      if (!expected) {
+        await pushAll();
+        return { reload: false };
+      }
+      var hadConflict = false;
+      for (var i = 0; i < pending.ops.length; i++) {
+        var op = pending.ops[i];
+        var ret;
+        try {
+          ret = await rpc('class_state_patch', {
+            p_token: getToken(),
+            p_expected_updated_at: expected,
+            p_collection: op.collection,
+            p_op: op.op,
+            p_id: op.id,
+            p_item: op.op === 'upsert' ? op.item : null
+          });
+        } catch (error) {
+          if (isMissingPatchRpc(error)) {
+            patchUnavailable = true;
+            await pushAll();
+            return { reload: false };
+          }
+          throw error;
+        }
+        if (ret && ret.ok) {
+          if (ret.updated_at) setMeta(ret.updated_at);
+          expected = ret.updated_at || meta().updated_at;
+          markSnapshot(op);
+          continue;
+        }
+        if (ret && ret.conflict) {
+          await mergeRemoteConflict();
+          hadConflict = true;
+          break;
+        }
+        throw new Error('名册保存返回异常');
+      }
+      if (hadConflict) continue;
+      lastSignature = signature();
+      return { reload: patchReloadPending };
+    }
+    throw new Error('名册同时被多人修改，请稍后重试');
   }
   async function pushSelf() {
     var auth = getAuth();
@@ -20228,29 +20413,47 @@ function friendlyRemoteError(error) {
     var localEmpty = !localMembers.length && !localTeachers.length;
     if (!m || m.updated_at !== remote.updated_at || localEmpty) {
       if (signature() !== lastSignature && lastSignature) {
-        // 本页有尚未同步的变更；先不要用远端覆盖。
+        // 本页有尚未同步的变更；以远端为基线，保留本机变更供逐条补写。
+        setSnapshot(remoteMembers, remoteTeachers);
+        setMeta(remote.updated_at);
         return true;
       }
       writeState(remote.members, remote.teachers);
       setMeta(remote.updated_at);
+      setSnapshot(remoteMembers, remoteTeachers);
       lastSignature = signature();
       // 远端数据写入后强制重载，确保主应用以新名册重新初始化。
       location.reload();
       return false;
     }
+    setSnapshot(remoteMembers, remoteTeachers);
     return true;
   }
   function startWatcher() {
     lastSignature = signature();
+    if (!snapshotMembers && !snapshotTeachers) {
+      setSnapshot(getMembers(), getTeachers());
+    }
     setInterval(async function () {
       if (busy || stopped) return;
       var sig = signature();
+      if (patchReloadPending && !isEditing() && sig === lastSignature) {
+        patchReloadPending = false;
+        location.reload();
+        return;
+      }
       if (sig === lastSignature) return;
       busy = true;
       try {
-        if (isAdmin()) await pushAll();
+        var result = null;
+        if (isAdmin()) result = await pushAdminChanges();
         else await pushSelf();
         lastSignature = signature();
+        if (result && result.reload && !isEditing()) {
+          patchReloadPending = false;
+          location.reload();
+          return;
+        }
       } catch (e) {
         console.warn('[class-sync] 储存失败，保留本机资料，稍后重试', e);
         // 不要更新 lastSignature：保持“未同步”状态，下一轮自动重试。
@@ -20263,6 +20466,11 @@ function friendlyRemoteError(error) {
     if (busy || stopped || isEditing()) return;
     var token = getToken();
     if (!token) return;
+    if (patchReloadPending) {
+      patchReloadPending = false;
+      location.reload();
+      return;
+    }
     try {
       var remote = await rpc('class_state_get', { p_token: token });
       if (!remote || remote.empty) return;
@@ -20272,6 +20480,7 @@ function friendlyRemoteError(error) {
       busy = true;
       writeState(remote.members, remote.teachers);
       setMeta(remote.updated_at);
+      setSnapshot(remote.members, remote.teachers);
       lastSignature = signature();
       busy = false;
       // 远端名册已变化：重载页面，让主应用以新资料重新渲染。
