@@ -20837,9 +20837,26 @@ function friendlyRemoteError(error) {
     var CACHE_KEY = 'ming-class-gallery-v1';
     var MAX_FILES = 9;
     var items = [];
+    var hiddenPaths = {};
     var loading = false;
     var uploading = false;
     var galleryUploadEpoch = 0;
+
+    async function loadHiddenPaths() {
+      try {
+        var res = await fetch(SUPABASE_URL + '/rest/v1/class_gallery_hidden?select=path', {
+          headers: { 'apikey': SUPABASE_KEY }
+        });
+        if (!res.ok) return;
+        var rows = await res.json();
+        hiddenPaths = {};
+        (Array.isArray(rows) ? rows : []).forEach(function (row) {
+          if (row && row.path) hiddenPaths[row.path] = true;
+        });
+      } catch (e) {
+        /* SQL 尚未执行时静默降级，不影响图库浏览 */
+      }
+    }
 
     var dom = {};
     var h = function (value) {
@@ -20929,7 +20946,6 @@ function friendlyRemoteError(error) {
           method: 'POST',
           headers: {
             'apikey': SUPABASE_KEY,
-            'Authorization': 'Bearer ' + token,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({ p_token: token, p_path: item.path })
@@ -20948,10 +20964,11 @@ function friendlyRemoteError(error) {
           }
           throw new Error('删除失败（' + res.status + '）。' + detail);
         }
+        hiddenPaths[item.path] = true;
         items = items.filter(function (old) { return old.path !== item.path; });
         saveCache();
         render();
-        setStatus('照片已删除。', 'ok');
+        setStatus('照片已从图库删除。', 'ok');
       } catch (e) {
         setStatus(e.message || '删除失败，请稍后重试。', 'error');
       }
@@ -21015,6 +21032,7 @@ function friendlyRemoteError(error) {
     }
 
     async function listGallery() {
+      await loadHiddenPaths();
       var res = await fetch(SUPABASE_URL + '/storage/v1/object/list/' + BUCKET, {
         method: 'POST',
         headers: {
@@ -21040,6 +21058,8 @@ function friendlyRemoteError(error) {
           date: formatDate(row.created_at || row.updated_at),
           created_at: row.created_at || row.updated_at || ''
         };
+      }).filter(function (item) {
+        return !hiddenPaths[item.path];
       }).sort(function (a, b) {
         return String(b.created_at).localeCompare(String(a.created_at));
       });
