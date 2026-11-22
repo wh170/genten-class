@@ -10895,6 +10895,136 @@ try {
   }
 } catch (e) {}
 </script>
+<style id="message-burst-style">
+  /* 满屏留言：明亮、轻盈、宣纸气泡 */
+  .message-burst-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(184, 151, 87, .45);
+    background:
+      linear-gradient(135deg, rgba(255, 253, 246, .92), rgba(250, 243, 226, .74));
+    color: #6b5630;
+    font-family: inherit;
+    font-size: 13px;
+    letter-spacing: .08em;
+    line-height: 1;
+    box-shadow:
+      0 8px 20px rgba(128, 103, 54, .10),
+      inset 0 1px 0 rgba(255, 255, 255, .92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    cursor: pointer;
+    transition: transform .22s ease, box-shadow .22s ease, opacity .22s ease;
+    white-space: nowrap;
+  }
+
+  .message-burst-btn span {
+    font-size: 14px;
+    color: #b28c4f;
+    transform: translateY(-.5px);
+  }
+
+  .message-burst-btn:hover {
+    transform: translateY(-1px) scale(1.035);
+    box-shadow:
+      0 12px 26px rgba(128, 103, 54, .16),
+      0 0 18px rgba(214, 177, 105, .22),
+      inset 0 1px 0 rgba(255, 255, 255, .96);
+  }
+
+  .message-burst-btn:active { transform: scale(.98); }
+
+  .message-burst-btn:disabled {
+    cursor: default;
+    opacity: .55;
+    transform: none;
+    box-shadow: 0 5px 14px rgba(128, 103, 54, .08);
+  }
+
+  #messageOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 15000;
+    overflow: hidden;
+    pointer-events: none;
+    contain: layout style paint;
+  }
+
+  .message-bubble {
+    position: absolute;
+    left: 0;
+    top: 0;
+    max-width: min(260px, 52vw);
+    padding: 11px 16px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, .82);
+    color: #3f4a42;
+    font-family: "Noto Serif SC", "Songti SC", serif;
+    font-size: clamp(12px, 1.05vw, 15px);
+    letter-spacing: .04em;
+    line-height: 1.5;
+    white-space: normal;
+    word-break: break-word;
+    box-shadow:
+      0 14px 34px rgba(80, 91, 70, .16),
+      0 2px 8px rgba(255, 255, 255, .55) inset;
+    will-change: transform, opacity;
+    transform-origin: 50% 50%;
+    backface-visibility: hidden;
+  }
+
+  .message-bubble-name {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 10px;
+    line-height: 1.2;
+    letter-spacing: .1em;
+    color: #8b7a59;
+    opacity: .9;
+  }
+
+  .message-empty-note {
+    position: absolute;
+    left: 50%;
+    top: 62%;
+    transform: translateX(-50%);
+    padding: 12px 18px;
+    border-radius: 999px;
+    background: rgba(255, 252, 243, .94);
+    border: 1px solid rgba(184, 151, 87, .28);
+    color: #7d6a48;
+    font-size: 13px;
+    letter-spacing: .06em;
+    box-shadow: 0 12px 28px rgba(80, 91, 70, .12);
+  }
+
+  .message-bubble::after {
+    content: "";
+    position: absolute;
+    left: 22px;
+    bottom: -6px;
+    width: 12px;
+    height: 12px;
+    background: inherit;
+    border-right: 1px solid rgba(255, 255, 255, .75);
+    border-bottom: 1px solid rgba(255, 255, 255, .75);
+    transform: rotate(45deg);
+    border-radius: 0 0 4px 0;
+  }
+
+  @media (max-width: 720px) {
+    .message-burst-btn { padding: 8px 13px; font-size: 12px; }
+    .message-bubble { max-width: 64vw; font-size: 12px; padding: 9px 13px 10px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .message-bubble { transition: none !important; }
+  }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
 </head>
 
 <body>
@@ -11971,6 +12101,9 @@ try {
           </div>
           <div class="teacher-tools">
             
+            <button class="message-burst-btn" type="button" data-message-kind="teacher" aria-label="让教师留言飘起来">
+              <span aria-hidden="true">✎</span> 留言
+            </button>
             <button class="btn btn--gold teacher-self-fill" id="teacherSelfFillBtn" type="button" hidden>填写我的师资资料</button>
             <button class="teacher-edit-toggle" id="teacherEditToggle" type="button" aria-expanded="false" title="页面编辑模式预设关闭">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -12048,6 +12181,9 @@ try {
           </div>
 
           <div class="roster-actions">
+            <button class="message-burst-btn" type="button" data-message-kind="student" aria-label="让同窗留言飘起来">
+              <span aria-hidden="true">✎</span> 留言
+            </button>
             <button class="btn btn--gold" id="addMemberBtn" type="button">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
                 <path d="M12 5v14M5 12h14" />
@@ -20437,6 +20573,25 @@ function friendlyRemoteError(error) {
     pullRemoteMessages();
   }
 
+  // 留言飘屏只读取真实资料：教师用 remark，同窗用 message；不预置文案。
+  window.__messageBubbleSource = function () {
+    try {
+      var teachers = (state.teachers || []).filter(function (t) {
+        return t && t.name && (t.remark || t.message) && t.incomplete !== true;
+      }).map(function (t) {
+        return { name: String(t.name), text: String(t.remark || t.message) };
+      });
+      var members = (state.members || []).filter(function (m) {
+        return m && m.name && (m.message || m.remark);
+      }).map(function (m) {
+        return { name: String(m.name), text: String(m.message || m.remark) };
+      });
+      return { teachers: teachers, members: members };
+    } catch (e) {
+      return { teachers: [], members: [] };
+    }
+  };
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init, { once: true });
   } else {
@@ -21508,6 +21663,121 @@ function friendlyRemoteError(error) {
     markReady();
   } else {
     readyTimer = window.setTimeout(markReady, 2550);
+  }
+})();
+</script>
+<div id="messageOverlay" aria-hidden="true"></div>
+<script id="message-burst-script">
+(function () {
+  var overlay = document.getElementById('messageOverlay');
+  if (!overlay) return;
+  var COLORS = ['#fff8e1', '#e3f2fd', '#fce4ec', '#e8f5e9', '#f3e5f5', '#fff3e0', '#e0f7fa'];
+  var lockUntil = { teacher: 0, student: 0 };
+
+  function rnd(min, max) { return min + Math.random() * (max - min); }
+  function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
+
+  function sourceItems(kind) {
+    if (typeof window.__messageBubbleSource !== 'function') return [];
+    var src = window.__messageBubbleSource() || {};
+    return (kind === 'teacher' ? src.teachers : src.members) || [];
+  }
+
+  function showEmpty(kind) {
+    var note = document.createElement('div');
+    note.className = 'message-empty-note';
+    note.textContent = kind === 'teacher' ? '老师们还没有留下文字。' : '同窗们还没有留下文字。';
+    overlay.appendChild(note);
+    window.setTimeout(function () { note.remove(); }, 1800);
+  }
+
+  function burst(kind, button) {
+    var now = Date.now();
+    if (now < lockUntil[kind]) return;
+
+    var items = sourceItems(kind).filter(function (item) {
+      return item && String(item.text || '').trim();
+    });
+    if (!items.length) {
+      lockUntil[kind] = now + 1200;
+      showEmpty(kind);
+      return;
+    }
+
+    lockUntil[kind] = now + 2600;
+    button.disabled = true;
+    window.setTimeout(function () { button.disabled = false; }, 2600);
+
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var W = window.innerWidth, H = window.innerHeight;
+    var pool = items.slice();
+    for (var p = pool.length - 1; p > 0; p--) {
+      var j = Math.floor(Math.random() * (p + 1));
+      var tmp = pool[p]; pool[p] = pool[j]; pool[j] = tmp;
+    }
+
+    // 一条真实留言只生成一个气泡，不复制、不套用模板文案。
+    var count = Math.min(50, pool.length);
+    for (var i = 0; i < count; i++) {
+      var item = pool[i];
+      let bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+      var name = document.createElement('span');
+      name.className = 'message-bubble-name';
+      name.textContent = item.name || '';
+      bubble.appendChild(name);
+      bubble.appendChild(document.createTextNode(item.text));
+      bubble.style.backgroundColor = pick(COLORS);
+      overlay.appendChild(bubble);
+
+      var maxStart = Math.max(10, W - bubble.offsetWidth - 12);
+      var startX = rnd(10, Math.max(11, Math.min(W * 0.82, maxStart)));
+      var startY = H * rnd(0.60, 0.78);
+      var rise = H * rnd(0.56, 0.82);
+      var sway = rnd(-70, 70);
+      var rotation = rnd(-16, 16);
+      var delay = i * 0.035 + rnd(0, 0.32);
+      var duration = rnd(3.3, 4.2);
+      var swap = Math.random() < 0.5 ? 'sine.inOut' : 'power1.inOut';
+
+      if (window.gsap && !reduced) {
+        window.gsap.set(bubble, {
+          x: startX, y: startY, scale: 0.32,
+          opacity: 0, rotation: rnd(-14, 14)
+        });
+        var tl = window.gsap.timeline({
+          delay: delay,
+          onComplete: function () { bubble.remove(); }
+        });
+        tl.to(bubble, { opacity: 1, scale: 1, duration: 0.38, ease: 'back.out(1.7)' }, 0)
+          .to(bubble, { y: startY - rise, duration: duration, ease: 'sine.inOut' }, 0)
+          .to(bubble, { x: startX + sway, duration: 0.85, yoyo: true, repeat: 4, ease: swap }, 0.2)
+          .to(bubble, { rotation: rotation, duration: duration, ease: 'sine.inOut' }, 0)
+          .to(bubble, { opacity: 0, duration: 0.65 }, duration - 0.7);
+      } else {
+        bubble.style.transform = 'translate3d(' + startX + 'px,' + startY + 'px,0) scale(.9)';
+        bubble.style.opacity = '0';
+        bubble.style.transition = 'transform ' + duration + 's ease-out, opacity ' + duration + 's ease-in';
+        (function (node, x, y, drift) {
+          window.requestAnimationFrame(function () {
+            window.requestAnimationFrame(function () {
+              node.style.transform = 'translate3d(' + (x + drift) + 'px,' + (y - rise) + 'px,0) scale(1)';
+              node.style.opacity = '0';
+            });
+          });
+          window.setTimeout(function () { node.remove(); }, (duration + 0.6) * 1000);
+        }(bubble, startX, startY, sway));
+      }
+    }
+  }
+
+  var buttons = document.querySelectorAll('[data-message-kind]');
+  for (var b = 0; b < buttons.length; b++) {
+    (function (button) {
+      button.addEventListener('click', function () {
+        burst(button.getAttribute('data-message-kind'), button);
+      });
+    }(buttons[b]));
   }
 })();
 </script>
