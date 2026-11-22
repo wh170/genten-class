@@ -21965,15 +21965,22 @@ function friendlyRemoteError(error) {
     requestAnimationFrame(frame);
   }
 
+  function requestExit() {
+    /* 首次进入时若正在解析大页面，ready 定时器可能还没触发；
+       用户点击应当立即生效，而不是等动画“准备好”。 */
+    if (!ready) markReady();
+    exitLoader();
+  }
+
   loader.addEventListener("click", function (event) {
     event.stopPropagation();
-    exitLoader();
+    requestExit();
   });
   loader.addEventListener("keydown", function (event) {
     if (event.key === "Enter" || event.key === " " || event.key === "Spacebar") {
       event.preventDefault();
       event.stopPropagation();
-      exitLoader();
+      requestExit();
     }
   });
 
