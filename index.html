@@ -11165,7 +11165,9 @@ try {
 
 <body>
 
-<div id="stageLoader" role="button" tabindex="0" aria-label="时空正在展开。轻触屏幕，开启时空">
+<div id="stageLoader" role="button" tabindex="0" aria-label="时空正在展开。轻触屏幕，开启时空"
+  onclick="window.__stageLoaderForceExit && window.__stageLoaderForceExit()"
+  onkeydown="if(event.key==='Enter'||event.key===' '||event.key==='Spacebar'){event.preventDefault();window.__stageLoaderForceExit && window.__stageLoaderForceExit();}">
   <div class="stage-loader-inner">
     <div class="stage-loader-orbit">
       <svg viewBox="0 0 200 200" aria-hidden="true">
@@ -11183,20 +11185,41 @@ try {
 </div>
 <noscript><style>#stageLoader{display:none!important}body.stage-loader-open{overflow:auto!important}</style></noscript>
 <script id="stage-loader-early-click">
-/* 大页面解析较慢时，加载页可能先显示、脚本还没绑定；这里先接住第一次点击。 */
+/* 关键：不依赖后面的长脚本。加载页一出现就能点，点完必定收起。 */
 (function () {
   var loader = document.getElementById('stageLoader');
   if (!loader) return;
-  function catchEarlyClick() {
-    window.__stageLoaderEarlyExit = true;
-    loader.classList.add('is-ready');
-  }
-  loader.addEventListener('click', catchEarlyClick, { capture: true });
+  window.__stageLoaderForceExit = function () {
+    if (!loader || loader.getAttribute('data-force-exited') === '1') return;
+    loader.setAttribute('data-force-exited', '1');
+    loader.classList.add('is-ready', 'is-exiting');
+    loader.style.transition = 'clip-path .95s cubic-bezier(.77, 0, .18, 1)';
+    loader.style.clipPath = 'inset(0 0 0 100%)';
+    window.clearTimeout(loader.__hideTimer);
+    loader.__hideTimer = window.setTimeout(function () {
+      loader.style.display = 'none';
+      document.body.classList.remove('stage-loader-open');
+      loader.setAttribute('aria-hidden', 'true');
+    }, 980);
+  };
+  loader.addEventListener('click', function (event) {
+    event.stopPropagation();
+    window.__stageLoaderForceExit();
+  }, { capture: true });
   loader.addEventListener('keydown', function (event) {
     if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
-      catchEarlyClick();
+      event.preventDefault();
+      window.__stageLoaderForceExit();
     }
   }, { capture: true });
+  /* 保底：页面完全加载后仍然没人点，也不让黑场永远卡住。 */
+  window.addEventListener('load', function () {
+    window.setTimeout(function () {
+      if (loader.style.display !== 'none' && getComputedStyle(loader).display !== 'none') {
+        window.__stageLoaderForceExit();
+      }
+    }, 7000);
+  }, { once: true });
 })();
 </script>
 <div id="splashScreen" role="button" tabindex="0" aria-label="数风流人物，还看今朝。轻触屏幕，开启我们的故事">
@@ -21957,6 +21980,10 @@ function friendlyRemoteError(error) {
     loader.style.display = "none";
     return;
   }
+  if (loader.getAttribute("data-force-exited") === "1") {
+    document.body.classList.remove("stage-loader-open");
+    return;
+  }
   var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var ready = false;
   var exiting = false;
@@ -22000,8 +22027,11 @@ function friendlyRemoteError(error) {
   }
 
   function requestExit() {
-    /* 首次进入时若正在解析大页面，ready 定时器可能还没触发；
-       用户点击应当立即生效，而不是等动画“准备好”。 */
+    /* 点击优先走早期内联逻辑，不依赖本脚本是否已执行/ready 计时器。 */
+    if (typeof window.__stageLoaderForceExit === "function") {
+      window.__stageLoaderForceExit();
+      return;
+    }
     if (!ready) markReady();
     exitLoader();
   }
