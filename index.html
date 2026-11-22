@@ -21313,7 +21313,7 @@ function friendlyRemoteError(error) {
         link.href = item.url;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
-        link.setAttribute('aria-label', '查看班级图库照片' + (item.date ? '，' + item.date : '') + (item.isMine ? '，我的照片' : ''));
+        link.setAttribute('aria-label', '查看班级图库照片' + (item.isMine ? '，我的照片' : ''));
 
         var img = document.createElement('img');
         img.src = item.url;
@@ -21326,12 +21326,6 @@ function friendlyRemoteError(error) {
         }, { once: true });
         link.appendChild(img);
 
-        if (item.date) {
-          var date = document.createElement('span');
-          date.className = 'gallery-date';
-          date.textContent = item.date;
-          link.appendChild(date);
-        }
         tile.appendChild(link);
 
         if (item.isMine) {
