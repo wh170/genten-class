@@ -17932,6 +17932,31 @@ try {
     }
   }
 
+  // 主应用名录快照：给留言模块读取同窗/教师的真实资料。
+  window.__classDirectorySource = function () {
+    try {
+      return {
+        teachers: (state.teachers || []).map(function (t) {
+          return {
+            name: String(t.name || ''),
+            type: String(t.type || ''),
+            remark: String(t.remark || '')
+          };
+        }),
+        members: (state.members || []).map(function (m) {
+          return {
+            id: String(m.id || ''),
+            studentId: String(m.studentId || m.student_id || ''),
+            name: String(m.name || ''),
+            message: String(m.message || '')
+          };
+        })
+      };
+    } catch (e) {
+      return { teachers: [], members: [] };
+    }
+  };
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init, { once: true });
   } else {
@@ -20574,18 +20599,31 @@ function friendlyRemoteError(error) {
     pullRemoteMessages();
   }
 
-  // 留言飘屏只读取真实资料：教师用 remark，同窗用 message；不预置文案。
+  // 留言飘屏只读取真实资料：教师用 remark，同窗读取 state.messages；不预置文案。
   window.__messageBubbleSource = function () {
     try {
-      var teachers = (state.teachers || []).filter(function (t) {
-        return t && t.name && (t.remark || t.message) && t.incomplete !== true;
+      var directory = window.__classDirectorySource
+        ? window.__classDirectorySource()
+        : { teachers: [], members: [] };
+      var teachers = (directory.teachers || []).filter(function (t) {
+        return t && t.name && String(t.remark || '').trim();
       }).map(function (t) {
-        return { name: String(t.name), text: String(t.remark || t.message) };
+        return { name: String(t.name), text: String(t.remark).trim() };
       });
-      var members = (state.members || []).filter(function (m) {
-        return m && m.name && (m.message || m.remark);
-      }).map(function (m) {
-        return { name: String(m.name), text: String(m.message || m.remark) };
+      var members = [];
+      (directory.members || []).forEach(function (m) {
+        if (!m || !m.name) return;
+        var rows = messagesOf({ id: m.id }).filter(function (row) {
+          return row && String(row.text || '').trim();
+        });
+        if (rows.length) {
+          rows.forEach(function (row) {
+            members.push({ name: String(m.name), text: String(row.text).trim() });
+          });
+          return;
+        }
+        var legacy = String(m.message || '').trim();
+        if (legacy) members.push({ name: String(m.name), text: legacy });
       });
       return { teachers: teachers, members: members };
     } catch (e) {
