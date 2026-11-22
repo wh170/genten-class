@@ -20882,6 +20882,20 @@ function friendlyRemoteError(error) {
         clean.split('/').map(encodeURIComponent).join('/');
     }
 
+    async function deleteStorageObject(path) {
+      try {
+        var clean = String(path || '').replace(/^\/+/, '');
+        var res = await fetch(SUPABASE_URL + '/storage/v1/object/' + BUCKET + '/' +
+          clean.split('/').map(encodeURIComponent).join('/'), {
+          method: 'DELETE',
+          headers: { 'apikey': SUPABASE_KEY }
+        });
+        return res.ok;
+      } catch (e) {
+        return false;
+      }
+    }
+
     function isImageObject(row) {
       var name = row && row.name ? String(row.name) : '';
       var mime = row && row.metadata && row.metadata.mimetype ? String(row.metadata.mimetype) : '';
@@ -20965,10 +20979,11 @@ function friendlyRemoteError(error) {
           throw new Error('删除失败（' + res.status + '）。' + detail);
         }
         hiddenPaths[item.path] = true;
+        var removedFromStorage = await deleteStorageObject(item.path);
         items = items.filter(function (old) { return old.path !== item.path; });
         saveCache();
         render();
-        setStatus('照片已从图库删除。', 'ok');
+        setStatus(removedFromStorage ? '照片已删除。' : '已从图库移除；云端原文件暂未清理。', removedFromStorage ? 'ok' : 'error');
       } catch (e) {
         setStatus(e.message || '删除失败，请稍后重试。', 'error');
       }
