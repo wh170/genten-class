@@ -11823,9 +11823,7 @@ try {
       opacity: 0;
       overflow: hidden;
       background:
-        radial-gradient(circle at 50% 46%, rgba(13, 47, 39, .93) 0%, rgba(4, 21, 20, .97) 58%, #020d0d 100%);
-      -webkit-backdrop-filter: blur(10px);
-      backdrop-filter: blur(10px);
+        radial-gradient(circle at 50% 46%, rgba(13, 47, 39, .985) 0%, rgba(4, 21, 20, .995) 58%, #020d0d 100%);
       perspective: 1500px;
       pointer-events: none;
     }
@@ -11894,6 +11892,7 @@ try {
       cursor: pointer;
       overflow: visible;
       transition: filter .28s ease, box-shadow .28s ease;
+      will-change: transform;
     }
 
     .memory-ring-card .ring-card-face {
@@ -11922,7 +11921,7 @@ try {
     }
 
     .memory-ring-card.is-dimmed {
-      filter: brightness(.56) blur(1.2px) saturate(.8);
+      filter: brightness(.58) saturate(.82);
       box-shadow: 0 5px 14px rgba(30, 34, 24, .12);
     }
 
@@ -11942,7 +11941,8 @@ try {
       background: #fffdf8;
       box-shadow: 0 14px 30px rgba(30, 34, 24, .24);
       overflow: hidden;
-      will-change: left, top, width, height, opacity;
+      transform-origin: 0 0;
+      will-change: transform, opacity;
     }
 
     .memory-ring-flight img {
@@ -13361,7 +13361,7 @@ try {
           <button class="gallery-book-btn gallery-ring-btn" id="galleryRingBtn" type="button" disabled>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2l1.15 3.4L16.6 7.8l-3.45 1.2L12 12.5l-1.15-3.5L7.4 7.8l3.45-1.2L12 3.2Z"/><path d="M18.3 13.4l.72 2.1 2.12.73-2.12.73-.72 2.12-.73-2.12-2.12-.73 2.12-.73.73-2.1Z"/><path d="M5.2 14.4l.55 1.62 1.62.56-1.62.55-.55 1.63-.56-1.63-1.62-.55 1.62-.56.56-1.62Z"/></svg> 开启时光画廊
           </button>
-          <p class="gallery-book-hint" id="galleryRingHint">至少需要两张照片，才能开启时光画廊。</p>
+          <p class="gallery-book-hint" id="galleryRingHint">正在准备时光画廊…</p>
         </div>
       </section>
     </main>
@@ -24414,7 +24414,10 @@ function friendlyRemoteError(error) {
       duration: isMobile() ? 58 : 48,
       repeat: -1,
       ease: 'none',
-      onUpdate: applyOrbit
+      onUpdate: function () {
+        orbit.frame = (orbit.frame || 0) + 1;
+        if (orbit.frame % 2 === 0) applyOrbit();
+      }
     });
   }
 
@@ -24449,7 +24452,7 @@ function friendlyRemoteError(error) {
     var mobile = isMobile();
     cardWidth = mobile ? Math.min(100, Math.max(72, window.innerWidth * 0.20)) : Math.min(160, Math.max(112, window.innerWidth * 0.112));
     cardHeight = Math.round(cardWidth * 0.75);
-    var radius = Math.min(mobile ? window.innerWidth * 0.36 : window.innerWidth * 0.32, window.innerHeight * (mobile ? 0.30 : 0.42), mobile ? 190 : 405);
+    var radius = Math.min(mobile ? window.innerWidth * 0.46 : window.innerWidth * 0.32, window.innerHeight * (mobile ? 0.30 : 0.42), mobile ? 205 : 405);
     var innerRadius = radius * 0.52;
     var innerCount = Math.floor(imgs.length / 2);
     var outerCount = imgs.length - innerCount;
@@ -24480,12 +24483,7 @@ function friendlyRemoteError(error) {
       photo.className = 'ring-card-face ring-card-front';
       photo.src = img.currentSrc || img.src;
       photo.alt = img.alt || '';
-      var photoBack = document.createElement('img');
-      photoBack.className = 'ring-card-face ring-card-back';
-      photoBack.src = photo.src;
-      photoBack.alt = '';
       card.appendChild(photo);
-      card.appendChild(photoBack);
       card._ringZ = z;
       card._ringScale = scale;
       card._ringIndex = 10 + index;
@@ -24542,15 +24540,19 @@ function friendlyRemoteError(error) {
     });
 
     flights.forEach(function (f, i) {
+      var from = originals[i].rect;
       var t = targets[i];
       tl.to(f, {
-        left: t.left, top: t.top, width: t.width, height: t.height,
+        x: t.left - from.left,
+        y: t.top - from.top,
+        scaleX: t.width / Math.max(1, from.width),
+        scaleY: t.height / Math.max(1, from.height),
         opacity: 1,
-        duration: 1.02,
+        duration: 0.78,
         ease: 'power3.inOut'
-      }, i * 0.035);
+      }, i * 0.02);
     });
-    tl.to({}, { duration: 0.12 });
+    tl.to({}, { duration: 0.06 });
   }
 
   function closeRing() {
@@ -24583,14 +24585,18 @@ function friendlyRemoteError(error) {
 
     flights.forEach(function (f, i) {
       var o = originals[i].rect;
+      var from = current[i];
       tl.to(f, {
-        left: o.left, top: o.top, width: o.width, height: o.height,
+        x: o.left - from.left,
+        y: o.top - from.top,
+        scaleX: o.width / Math.max(1, from.width),
+        scaleY: o.height / Math.max(1, from.height),
         opacity: 0,
-        duration: 0.84,
+        duration: 0.66,
         ease: 'power3.inOut'
-      }, i * 0.018);
+      }, i * 0.012);
     });
-    tl.to(overlay, { opacity: 0, duration: 0.42 }, 0.24);
+    tl.to(overlay, { opacity: 0, duration: 0.36 }, 0.2);
   }
 
   btn.addEventListener('click', function () {
