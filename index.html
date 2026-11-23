@@ -21538,6 +21538,7 @@ function friendlyRemoteError(error) {
     }, 1200);
   }
   async function pullRemote() {
+    if (window.__CLASS_SYNC_V2__ || window.__CLASS_ROSTER_V2_PENDING__) return;
     if (busy || stopped || isEditing()) return;
     var token = getToken();
     if (!token) return;
@@ -21574,6 +21575,11 @@ function friendlyRemoteError(error) {
     }
   }
   async function boot() {
+    if (window.__CLASS_SYNC_V2__) return;
+    if (window.__CLASS_ROSTER_V2_PENDING__) {
+      window.setTimeout(boot, 250);
+      return;
+    }
     if (stopped) return;
     if (!getToken() || !getAuth()) return;
     try {
@@ -21600,6 +21606,617 @@ function friendlyRemoteError(error) {
 
   if (document.readyState === 'complete') setTimeout(boot, 800);
   else window.addEventListener('load', function () { setTimeout(boot, 800); });
+})();
+
+</script>
+<script id="class-roster-v2-script">
+/* 名册实时并发 v2：一人一行 + Realtime 增量 + 无全局锁 */
+(function () {
+  'use strict';
+
+  var SUPABASE_URL = 'https://hvdfbpufjevwlattqttn.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_tPnlZdhrpeg4TQ1lsdjp3A_WDep2zhC';
+  var NS = 'hongtong-bighuai-class-v1';
+  var KEYS = {
+    members: NS + ':members',
+    teachers: NS + ':teachers',
+    auth: NS + ':auth',
+    token: NS + ':auth-token'
+  };
+
+  var pending = true;
+  var active = false;
+  var stopped = false;
+  var busy = false;
+  var client = null;
+  var channel = null;
+  var channelStatus = 'idle';
+  var serverMembers = Object.create(null);
+  var serverTeachers = Object.create(null);
+  var dirtyMembers = Object.create(null);
+  var dirtyTeachers = Object.create(null);
+  var pendingSig = '';
+  var pendingAt = 0;
+  var dirtySince = 0;
+  var lastPushAt = 0;
+  var retryAt = 0;
+  var tickTimer = null;
+  var pollTimer = null;
+  var periodicTimer = null;
+  var renderTimer = null;
+  var deferredRender = false;
+  var applyingRemote = false;
+  var lastLocalSignature = '';
+
+  window.__CLASS_ROSTER_V2_PENDING__ = true;
+
+  function readJSON(key, fallback) {
+    try {
+      var raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (e) { return fallback; }
+  }
+  function writeJSON(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); }
+    catch (e) { console.warn('[roster-v2] localStorage 写入失败', e); }
+  }
+  function getToken() { try { return localStorage.getItem(KEYS.token) || ''; } catch (e) { return ''; } }
+  function getAuth() { return readJSON(KEYS.auth, null); }
+  function isAdmin() { var a = getAuth(); return !!(a && a.role === 'admin'); }
+  function role() { var a = getAuth(); return a && a.role ? a.role : ''; }
+  function clone(v) { return v == null ? v : JSON.parse(JSON.stringify(v)); }
+  function asArray(v) {
+    if (Array.isArray(v)) return v;
+    if (typeof v === 'string') {
+      try { var x = JSON.parse(v); return Array.isArray(x) ? x : []; } catch (e) { return []; }
+    }
+    return [];
+  }
+  function getMembers() { return asArray(readJSON(KEYS.members, [])); }
+  function getTeachers() { return asArray(readJSON(KEYS.teachers, [])); }
+  function writeMembers(list) { writeJSON(KEYS.members, list); }
+  function writeTeachers(list) { writeJSON(KEYS.teachers, list); }
+  function idOf(item) { return item && item.id != null ? String(item.id) : ''; }
+  function mapOf(list) {
+    var map = Object.create(null);
+    for (var i = 0; i < list.length; i++) {
+      var id = idOf(list[i]);
+      if (id) map[id] = list[i];
+    }
+    return map;
+  }
+  function jsonOf(item) { return JSON.stringify(item); }
+  function getList(collection) { return collection === 'members' ? getMembers() : getTeachers(); }
+  function setList(collection, list) {
+    if (collection === 'members') writeMembers(list); else writeTeachers(list);
+  }
+  function getServerMap(collection) {
+    return collection === 'members' ? serverMembers : serverTeachers;
+  }
+  function getDirtyMap(collection) {
+    return collection === 'members' ? dirtyMembers : dirtyTeachers;
+  }
+  function setServerMaps(members, teachers) {
+    serverMembers = mapOf(members);
+    serverTeachers = mapOf(teachers);
+  }
+  function signature() {
+    return JSON.stringify({ m: getMembers(), t: getTeachers() });
+  }
+  function isEditing() {
+    var el = document.activeElement;
+    if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return true;
+    if (el && el.isContentEditable) return true;
+    var layers = document.querySelectorAll('.modal-layer:not([hidden]), .auth-layer:not([hidden])');
+    for (var i = 0; i < layers.length; i++) {
+      if (layers[i].id === 'loginOverlay' || layers[i].id === 'changePwdOverlay') continue;
+      if (layers[i].getBoundingClientRect().width > 0) return true;
+    }
+    return false;
+  }
+
+  function rpc(name, payload, timeoutMs) {
+    return new Promise(function (resolve, reject) {
+      var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var timer = null;
+      if (controller) {
+        timer = setTimeout(function () { try { controller.abort(); } catch (e) {} }, timeoutMs || 9000);
+      }
+      var opts = {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload || {})
+      };
+      if (controller) opts.signal = controller.signal;
+      fetch(SUPABASE_URL + '/rest/v1/rpc/' + name, opts).then(function (res) {
+        return res.text().then(function (text) {
+          if (!res.ok) {
+            var err = new Error(name + ' HTTP ' + res.status + ': ' + String(text).slice(0, 220));
+            err.status = res.status;
+            throw err;
+          }
+          if (!text) return {};
+          try { return JSON.parse(text); } catch (e) { return {}; }
+        });
+      }).then(resolve, reject).then(function () {
+        if (timer) clearTimeout(timer);
+      }, function () {
+        if (timer) clearTimeout(timer);
+      });
+    });
+  }
+  function missingRpc(error) {
+    var text = String(error && error.message ? error.message : error);
+    return !!(error && error.status === 404) || /PGRST202|Could not find the function|HTTP 404/.test(text);
+  }
+
+  function decideFallback(reason) {
+    pending = false;
+    window.__CLASS_ROSTER_V2_PENDING__ = false;
+    window.__CLASS_SYNC_V2__ = false;
+    console.warn('[roster-v2] 使用旧同步模式', reason || '');
+  }
+  function activate(snapshot) {
+    active = true;
+    stopped = false;
+    pending = false;
+    window.__CLASS_ROSTER_V2_PENDING__ = false;
+    window.__CLASS_SYNC_V2__ = true;
+    hydrateInitial(snapshot);
+    startLoop();
+    connectRealtime();
+    console.info('[roster-v2] 已启用实时名册');
+  }
+
+  function hydrateInitial(snapshot) {
+    var remoteMembers = asArray(snapshot && snapshot.members);
+    var remoteTeachers = asArray(snapshot && snapshot.teachers);
+    var localMembers = getMembers();
+    var localTeachers = getTeachers();
+    if (remoteMembers.length || remoteTeachers.length) {
+      // 首次进入以云端快照为准；之后只合并变化行，不再整页刷新。
+      writeMembers(remoteMembers);
+      writeTeachers(remoteTeachers);
+      setServerMaps(remoteMembers, remoteTeachers);
+      lastLocalSignature = signature();
+      applyNow();
+      return;
+    }
+    // 云端尚未初始化：保留本机数据。管理员随后会以一批 upsert 完成初始化；
+    // 学生/教师只会写自己那一行。
+    setServerMaps([], []);
+    lastLocalSignature = signature();
+    if (localMembers.length || localTeachers.length) {
+      scheduleRender();
+    }
+  }
+
+  function findIndex(list, id) {
+    for (var i = 0; i < list.length; i++) {
+      if (idOf(list[i]) === id) return i;
+    }
+    return -1;
+  }
+  function upsertLocal(collection, item) {
+    var list = getList(collection);
+    var id = idOf(item);
+    if (!id) return false;
+    var idx = findIndex(list, id);
+    if (idx >= 0) {
+      if (jsonOf(list[idx]) === jsonOf(item)) return false;
+      list[idx] = clone(item);
+    } else {
+      list.push(clone(item));
+    }
+    setList(collection, list);
+    return true;
+  }
+  function removeLocal(collection, id) {
+    var list = getList(collection);
+    var idx = findIndex(list, id);
+    if (idx < 0) return false;
+    list.splice(idx, 1);
+    setList(collection, list);
+    return true;
+  }
+  function localItem(collection, id) {
+    var list = getList(collection);
+    var idx = findIndex(list, id);
+    return idx >= 0 ? list[idx] : null;
+  }
+
+  function applyNow() {
+    if (typeof window.__applyRemoteClassState === 'function') {
+      try { window.__applyRemoteClassState(); }
+      catch (e) { console.warn('[roster-v2] 页面重绘失败', e); }
+    }
+  }
+  function scheduleRender() {
+    if (renderTimer) return;
+    renderTimer = setTimeout(function () {
+      renderTimer = null;
+      if (isEditing()) { deferredRender = true; return; }
+      applyNow();
+      deferredRender = false;
+    }, 220);
+  }
+
+  function handlePayload(collection, payload) {
+    if (!active) return;
+    var type = payload && payload.eventType ? payload.eventType : (payload && payload.type) || 'UPDATE';
+    var row = (payload && (payload.new || payload.record)) || {};
+    var old = (payload && payload.old) || {};
+    var id = String(type === 'DELETE'
+      ? (old.id || (old.data && old.data.id) || '')
+      : (row.id || (row.data && row.data.id) || ''));
+    if (!id) return;
+
+    var serverMap = getServerMap(collection);
+    var previous = serverMap[id];
+    var currentLocal = localItem(collection, id);
+    var localPending = false;
+    if (currentLocal) {
+      if (!previous) localPending = true;
+      else if (jsonOf(currentLocal) !== jsonOf(previous)) localPending = true;
+    }
+
+    var item = null;
+    if (type !== 'DELETE') {
+      item = row.data;
+      if (typeof item === 'string') {
+        try { item = JSON.parse(item); } catch (e) { item = null; }
+      }
+      if (item && typeof item === 'object') {
+        item.id = id;
+        serverMap[id] = clone(item);
+      } else {
+        return;
+      }
+    } else {
+      delete serverMap[id];
+    }
+
+    // 本机这条记录还有未推送的编辑：保留本机，下一轮 push 覆盖。
+    if (localPending || getDirtyMap(collection)[id]) return;
+
+    var changed = false;
+    if (type === 'DELETE') changed = removeLocal(collection, id);
+    else if (item) changed = upsertLocal(collection, item);
+    if (changed) scheduleRender();
+  }
+
+  function ensureRealtimeClient() {
+    if (client) return Promise.resolve(client);
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+      client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+      });
+      return Promise.resolve(client);
+    }
+    return new Promise(function (resolve) {
+      var done = false;
+      function finish(ok) {
+        if (done) return;
+        done = true;
+        if (ok && window.supabase && typeof window.supabase.createClient === 'function') {
+          try {
+            client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+              auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+            });
+          } catch (e) { client = null; }
+        }
+        resolve(client);
+      }
+      var script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+      script.async = true;
+      script.onload = function () { finish(true); };
+      script.onerror = function () { finish(false); };
+      document.head.appendChild(script);
+      setTimeout(function () { finish(Boolean(window.supabase)); }, 5500);
+    });
+  }
+
+  function connectRealtime() {
+    ensureRealtimeClient().then(function (c) {
+      if (!c || stopped) { startPolling(8000); return; }
+      try {
+        channel = c.channel('class-roster-v2');
+        channel.on('postgres_changes', { event: '*', schema: 'public', table: 'class_members' }, function (payload) {
+          handlePayload('members', payload);
+        });
+        channel.on('postgres_changes', { event: '*', schema: 'public', table: 'class_teachers' }, function (payload) {
+          handlePayload('teachers', payload);
+        });
+        channel.subscribe(function (status) {
+          channelStatus = status || '';
+          if (status === 'SUBSCRIBED') {
+            stopPolling();
+            setTimeout(function () { reconcile('subscribed'); }, 1200);
+            if (!periodicTimer) {
+              periodicTimer = setInterval(function () {
+                if (active && !stopped) reconcile('periodic');
+              }, 60000);
+            }
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            startPolling(8000);
+          }
+        });
+      } catch (e) {
+        console.warn('[roster-v2] Realtime 订阅失败，降级轮询', e);
+        startPolling(8000);
+      }
+    });
+  }
+
+  function startPolling(ms) {
+    if (pollTimer || stopped) return;
+    pollTimer = setInterval(function () {
+      if (active && !stopped && !busy) reconcile('poll');
+    }, ms || 8000);
+  }
+  function stopPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+
+  function mergeSnapshot(snapshot) {
+    var remoteMembers = asArray(snapshot && snapshot.members);
+    var remoteTeachers = asArray(snapshot && snapshot.teachers);
+    var prevMembers = serverMembers;
+    var prevTeachers = serverTeachers;
+    var localMembers = getMembers();
+    var localTeachers = getTeachers();
+
+    function merge(collection, remoteList, prevMap) {
+      var localList = collection === 'members' ? localMembers : localTeachers;
+      var localMap = mapOf(localList);
+      var remoteMap = mapOf(remoteList);
+      var out = [];
+      var changed = false;
+      var seen = Object.create(null);
+
+      for (var i = 0; i < remoteList.length; i++) {
+        var item = remoteList[i];
+        var id = idOf(item);
+        if (!id) { out.push(item); continue; }
+        seen[id] = true;
+        var l = localMap[id];
+        var p = prevMap[id];
+        var localChanged = l && (!p || jsonOf(l) !== jsonOf(p));
+        if (localChanged) {
+          out.push(l);
+        } else {
+          out.push(item);
+          if (!l || jsonOf(l) !== jsonOf(item)) changed = true;
+        }
+      }
+      for (var j = 0; j < localList.length; j++) {
+        var lid = idOf(localList[j]);
+        if (!lid) { out.push(localList[j]); continue; }
+        if (seen[lid]) continue;
+        var prev = prevMap[lid];
+        var localChanged2 = !prev || jsonOf(localList[j]) !== jsonOf(prev);
+        if (localChanged2 || !prev) {
+          // 尚未推送的新记录或本机未同步修改：保留。
+          out.push(localList[j]);
+          if (!prev || jsonOf(localList[j]) !== jsonOf(prev)) changed = true;
+        } else {
+          changed = true;
+        }
+      }
+      // 远端删除且本机没有未推送修改的行，会因不进入 out 而移除。
+      if (out.length !== localList.length) changed = true;
+      return { list: out, changed: changed };
+    }
+
+    var mm = merge('members', remoteMembers, prevMembers);
+    var tt = merge('teachers', remoteTeachers, prevTeachers);
+    if (mm.changed) writeMembers(mm.list);
+    if (tt.changed) writeTeachers(tt.list);
+    setServerMaps(remoteMembers, remoteTeachers);
+    lastLocalSignature = signature();
+    if (mm.changed || tt.changed) scheduleRender();
+  }
+
+  function reconcile(reason) {
+    if (!active || stopped || busy) return Promise.resolve(false);
+    if (!getToken()) return Promise.resolve(false);
+    return rpc('class_roster_snapshot', { p_token: getToken() }, 9000).then(function (snap) {
+      if (!snap || stopped) return false;
+      mergeSnapshot(snap);
+      return true;
+    }).catch(function (e) {
+      console.warn('[roster-v2] 快照校准失败', reason || '', e);
+      return false;
+    });
+  }
+
+  function collectOps() {
+    var ops = [];
+    var auth = getAuth() || {};
+    function collectOne(collection, list, map, dirtyMap, predicate) {
+      var seen = Object.create(null);
+      for (var i = 0; i < list.length; i++) {
+        var item = list[i];
+        var id = idOf(item);
+        if (!id) continue;
+        if (predicate && !predicate(item, id)) continue;
+        seen[id] = true;
+        var old = map[id];
+        if (!old || jsonOf(old) !== jsonOf(item)) {
+          ops.push({ collection: collection, op: 'upsert', id: id, item: clone(item) });
+          dirtyMap[id] = 1;
+        }
+      }
+      if (!predicate) {
+        var ids = Object.keys(map);
+        for (var j = 0; j < ids.length; j++) {
+          if (!seen[ids[j]]) {
+            ops.push({ collection: collection, op: 'delete', id: ids[j] });
+            dirtyMap[ids[j]] = 1;
+          }
+        }
+      }
+    }
+
+    if (isAdmin()) {
+      collectOne('members', getMembers(), serverMembers, dirtyMembers, null);
+      collectOne('teachers', getTeachers(), serverTeachers, dirtyTeachers, null);
+    } else if (auth.role === 'teacher') {
+      var tid = String(auth.teacherId || '');
+      collectOne('teachers', getTeachers(), serverTeachers, dirtyTeachers, function (item, id) {
+        return id === tid;
+      });
+    } else if (auth.role === 'student') {
+      var sid = String(auth.studentId || '');
+      collectOne('members', getMembers(), serverMembers, dirtyMembers, function (item) {
+        return String(item.studentId || item.student_id || '') === sid;
+      });
+    }
+    return ops;
+  }
+
+  function markPushed(ops) {
+    for (var i = 0; i < ops.length; i++) {
+      var op = ops[i];
+      var map = getServerMap(op.collection);
+      var dirty = getDirtyMap(op.collection);
+      if (op.op === 'delete') delete map[op.id];
+      else map[op.id] = clone(op.item);
+      delete dirty[op.id];
+    }
+  }
+
+  function pushAdmin(ops) {
+    return rpc('class_roster_apply', { p_token: getToken(), p_ops: ops }, 12000).then(function (res) {
+      if (!res || res.ok !== true) throw new Error('名册写入返回异常');
+      markPushed(ops);
+    });
+  }
+  function pushStudent(ops) {
+    var own = null;
+    for (var i = 0; i < ops.length; i++) {
+      if (ops[i].collection === 'members' && ops[i].op === 'upsert') { own = ops[i]; break; }
+    }
+    if (!own) return Promise.resolve();
+    return rpc('class_member_save_self_v2', { p_token: getToken(), p_member: own.item }, 10000).then(function (res) {
+      if (!res || res.ok !== true) throw new Error((res && res.error) || '个人资料保存失败');
+      markPushed([own]);
+    });
+  }
+  function pushTeacher(ops) {
+    var own = null;
+    for (var i = 0; i < ops.length; i++) {
+      if (ops[i].collection === 'teachers' && ops[i].op === 'upsert') { own = ops[i]; break; }
+    }
+    if (!own) return Promise.resolve();
+    return rpc('class_teacher_save_self_v2', { p_token: getToken(), p_teacher: own.item }, 10000).then(function (res) {
+      if (!res || res.ok !== true) throw new Error((res && res.error) || '教师资料保存失败');
+      markPushed([own]);
+    });
+  }
+  function push(ops) {
+    if (busy || stopped) return Promise.resolve();
+    if (!getToken()) return Promise.resolve();
+    var batch = ops.slice(0, 100);
+    busy = true;
+    lastPushAt = Date.now();
+    var task;
+    if (isAdmin()) task = pushAdmin(batch);
+    else if (role() === 'teacher') task = pushTeacher(batch);
+    else task = pushStudent(batch);
+    return task.then(function () {
+      pendingSig = '';
+      pendingAt = 0;
+      dirtySince = 0;
+      retryAt = 0;
+    }).catch(function (e) {
+      retryAt = Date.now() + 1600;
+      console.warn('[roster-v2] 保存失败，保留本机资料稍后重试', e);
+    }).then(function () {
+      busy = false;
+    });
+  }
+
+  function tick() {
+    if (!active || stopped || busy || document.hidden) return;
+    if (deferredRender && !isEditing()) {
+      deferredRender = false;
+      applyNow();
+    }
+    if (retryAt && Date.now() < retryAt) return;
+    var ops = collectOps();
+    if (!ops.length) {
+      pendingSig = '';
+      pendingAt = 0;
+      dirtySince = 0;
+      // 本机回到与云端一致时，清掉没有实际操作的脏标记。
+      dirtyMembers = Object.create(null);
+      dirtyTeachers = Object.create(null);
+      return;
+    }
+    var sig = JSON.stringify(ops);
+    var now = Date.now();
+    if (sig !== pendingSig) {
+      pendingSig = sig;
+      pendingAt = now;
+      if (!dirtySince) dirtySince = now;
+    }
+    // 等用户这轮修改稳定 340ms 后合并成一次 RPC；持续编辑最多 2.2s 也落一次。
+    if (now - pendingAt < 340 && now - dirtySince < 2200) return;
+    if (now - lastPushAt < 320) return;
+    push(ops);
+  }
+
+  function startLoop() {
+    if (tickTimer) clearInterval(tickTimer);
+    tickTimer = setInterval(tick, 260);
+    setTimeout(tick, 800);
+  }
+
+  // 登录失效或主动退出时停止。
+  window.addEventListener('beforeunload', function () {
+    stopped = true;
+    if (channel && channel.unsubscribe) { try { channel.unsubscribe(); } catch (e) {} }
+    if (tickTimer) clearInterval(tickTimer);
+    stopPolling();
+    if (periodicTimer) clearInterval(periodicTimer);
+  });
+
+  function probe() {
+    if (!getToken() || !getAuth()) {
+      decideFallback('no session');
+      return;
+    }
+    rpc('class_roster_snapshot', { p_token: getToken() }, 4500).then(function (snapshot) {
+      activate(snapshot || {});
+    }).catch(function (e) {
+      decideFallback(missingRpc(e) ? 'v2 RPC missing' : 'snapshot failed');
+      if (!missingRpc(e)) console.warn('[roster-v2] 探测失败', e);
+    });
+  }
+
+  // Debug/load-test surface for the current page; not used by UI.
+  window.__classRosterV2 = {
+    get active() { return active; },
+    get status() { return channelStatus; },
+    get pending() { return pending; },
+    get server() { return { members: serverMembers, teachers: serverTeachers }; },
+    get local() { return { members: getMembers(), teachers: getTeachers() }; },
+    flush: function () { return push(collectOps()); },
+    reconcile: reconcile,
+    tick: tick
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', probe, { once: true });
+  } else {
+    probe();
+  }
 })();
 
 </script>
