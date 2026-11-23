@@ -11803,6 +11803,241 @@ try {
     }
   </style>
 
+
+  <style id="memory-ring-style">
+    #galleryBookBtn,
+    #galleryBookHint { display: none !important; }
+
+    .gallery-ring-btn {
+      border-color: rgba(190, 151, 83, .62);
+      background: rgba(255, 253, 247, .82);
+    }
+
+    .gallery-ring-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .memory-ring-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 18000;
+      display: block;
+      opacity: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 46%, rgba(13, 47, 39, .93) 0%, rgba(4, 21, 20, .97) 58%, #020d0d 100%);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      perspective: 1500px;
+      pointer-events: none;
+    }
+
+    .memory-ring-overlay[hidden] { display: none !important; }
+
+    .memory-ring-overlay.is-open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .memory-ring-scene {
+      position: absolute;
+      inset: 0;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    .memory-ring-aura {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(78vw, 880px);
+      height: min(78vw, 880px);
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle, rgba(255, 244, 204, .72) 0%, rgba(238, 211, 154, .24) 34%, rgba(255, 255, 255, 0) 68%);
+      filter: blur(8px);
+      pointer-events: none;
+    }
+
+    .memory-ring-stage {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform-style: preserve-3d;
+    }
+
+    .memory-ring-wrapper {
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    .memory-ring-card {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 150px;
+      height: 112px;
+      margin-left: -75px;
+      margin-top: -56px;
+      padding: 0;
+      border: 1px solid rgba(202, 164, 101, .78);
+      border-radius: 10px;
+      background: #fffdf8;
+      box-shadow:
+        0 14px 30px rgba(44, 47, 35, .19),
+        0 0 14px rgba(212, 175, 55, .18);
+      transform-style: preserve-3d;
+      -webkit-backface-visibility: visible;
+      backface-visibility: visible;
+      cursor: pointer;
+      overflow: visible;
+      transition: filter .28s ease, box-shadow .28s ease;
+    }
+
+    .memory-ring-card .ring-card-face {
+      position: absolute;
+      inset: 5px;
+      width: calc(100% - 10px);
+      height: calc(100% - 10px);
+      object-fit: cover;
+      border-radius: 6px;
+      background: #fffdf8;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      pointer-events: none;
+    }
+
+    .memory-ring-card .ring-card-back {
+      transform: rotateY(180deg);
+    }
+
+    .memory-ring-card.is-hovered {
+      z-index: 1000 !important;
+      filter: brightness(1.06);
+      box-shadow:
+        0 26px 55px rgba(30, 34, 24, .32),
+        0 0 28px rgba(212, 175, 55, .72);
+    }
+
+    .memory-ring-card.is-dimmed {
+      filter: brightness(.56) blur(1.2px) saturate(.8);
+      box-shadow: 0 5px 14px rgba(30, 34, 24, .12);
+    }
+
+    .memory-ring-fly {
+      position: absolute;
+      inset: 0;
+      z-index: 40;
+      pointer-events: none;
+    }
+
+    .memory-ring-flight {
+      position: fixed;
+      z-index: 40;
+      padding: 5px;
+      border: 1px solid rgba(202, 164, 101, .8);
+      border-radius: 10px;
+      background: #fffdf8;
+      box-shadow: 0 14px 30px rgba(30, 34, 24, .24);
+      overflow: hidden;
+      will-change: left, top, width, height, opacity;
+    }
+
+    .memory-ring-flight img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    .memory-ring-close {
+      position: absolute;
+      top: 22px;
+      right: 24px;
+      z-index: 60;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border: 1px solid rgba(190, 151, 83, .55);
+      border-radius: 999px;
+      background: rgba(255, 253, 247, .86);
+      color: #6c552c;
+      font-size: 12px;
+      letter-spacing: .06em;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 10px 24px rgba(70, 54, 30, .12);
+    }
+
+    .memory-ring-close:hover { background: #fffdf8; }
+
+    .memory-ring-count {
+      position: absolute;
+      left: 50%;
+      bottom: 26px;
+      z-index: 60;
+      transform: translateX(-50%);
+      color: rgba(93, 76, 45, .76);
+      font-size: 12px;
+      letter-spacing: .16em;
+      pointer-events: none;
+    }
+
+    .memory-ring-hint {
+      position: absolute;
+      left: 50%;
+      bottom: 52px;
+      z-index: 60;
+      transform: translateX(-50%);
+      color: rgba(109, 90, 57, .54);
+      font-size: 11px;
+      letter-spacing: .1em;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    .memory-ring-hint {
+      color: rgba(255, 246, 224, .88);
+      text-shadow: 0 1px 12px rgba(0, 0, 0, .42);
+    }
+
+    .memory-ring-count {
+      color: rgba(255, 247, 221, .98);
+      text-shadow: 0 1px 12px rgba(0, 0, 0, .45);
+    }
+
+    .memory-ring-close {
+      color: #f2e7ca;
+      background: rgba(8, 27, 23, .58);
+      border-color: rgba(213, 184, 126, .6);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+    }
+
+    .memory-ring-close:hover {
+      color: #17392e;
+      background: #fbf5e6;
+    }
+
+    .memory-ring-card,
+    .memory-ring-flight { touch-action: manipulation; }
+
+    body.ring-open { overflow: hidden !important; }
+
+    @media (max-width: 760px) {
+      .memory-ring-close { top: 14px; right: 14px; padding: 7px 11px; }
+      .memory-ring-hint { bottom: 44px; font-size: 10px; letter-spacing: .04em; }
+      .memory-ring-count { bottom: 22px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .memory-ring-card { transition: none; }
+    }
+  </style>
 </head>
 
 <body>
@@ -13123,6 +13358,10 @@ try {
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.6c3-1 5.5-.4 8 1v12.8c-2.5-1.4-5-2-8-1V5.6Z"/><path d="M20 5.6c-3-1-5.5-.4-8 1v12.8c2.5-1.4 5-2 8-1V5.6Z"/></svg> 翻阅青春画册
           </button>
           <p class="gallery-book-hint" id="galleryBookHint">至少需要两张照片，才能翻成一本画册。</p>
+          <button class="gallery-book-btn gallery-ring-btn" id="galleryRingBtn" type="button" disabled>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2l1.15 3.4L16.6 7.8l-3.45 1.2L12 12.5l-1.15-3.5L7.4 7.8l3.45-1.2L12 3.2Z"/><path d="M18.3 13.4l.72 2.1 2.12.73-2.12.73-.72 2.12-.73-2.12-2.12-.73 2.12-.73.73-2.1Z"/><path d="M5.2 14.4l.55 1.62 1.62.56-1.62.55-.55 1.63-.56-1.63-1.62-.55 1.62-.56.56-1.62Z"/></svg> 开启时光画廊
+          </button>
+          <p class="gallery-book-hint" id="galleryRingHint">至少需要两张照片，才能开启时光画廊。</p>
         </div>
       </section>
     </main>
@@ -22587,6 +22826,22 @@ function friendlyRemoteError(error) {
   })();
   </script>
 
+  <div class="memory-ring-overlay" id="memoryRingOverlay" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="时光画廊">
+    <div class="memory-ring-scene" id="memoryRingScene">
+      <div class="memory-ring-aura" aria-hidden="true"></div>
+      <div class="memory-ring-stage" id="memoryRingStage">
+        <div class="memory-ring-wrapper" id="memoryRingWrapper"></div>
+      </div>
+      <div class="memory-ring-fly" id="memoryRingFly" aria-hidden="true"></div>
+    </div>
+    <button class="memory-ring-close" id="memoryRingClose" type="button" aria-label="收起时光画廊">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4.8c2.8-.9 4.9-.4 6 .9 1.1-1.3 3.2-1.8 6-.9v13.5c-2.8-.9-4.9-.4-6 .9-1.1-1.3-3.2-1.8-6-.9V4.8Z"/><path d="M12 5.7v13.5"/></svg>
+      收起画廊
+    </button>
+    <p class="memory-ring-hint">移动鼠标感受 3D 视差 · 悬停照片可查看</p>
+    <p class="memory-ring-count" id="memoryRingCount"></p>
+  </div>
+
   <script id="memory-book-script">
   (function () {
     'use strict';
@@ -24054,5 +24309,359 @@ function friendlyRemoteError(error) {
   }
 })();
 </script>
+
+<script id="memory-ring-script">
+(function () {
+  'use strict';
+
+  var MAX_PHOTOS = 16;
+  var grid = document.getElementById('galleryGrid');
+  var btn = document.getElementById('galleryRingBtn');
+  var hint = document.getElementById('galleryRingHint');
+  var overlay = document.getElementById('memoryRingOverlay');
+  var scene = document.getElementById('memoryRingScene');
+  var wrapper = document.getElementById('memoryRingWrapper');
+  var fly = document.getElementById('memoryRingFly');
+  var closeBtn = document.getElementById('memoryRingClose');
+  var count = document.getElementById('memoryRingCount');
+
+  if (!grid || !btn || !hint || !overlay || !scene || !wrapper || !fly || !closeBtn || !count) return;
+
+  function start() {
+  var isOpen = false;
+  var busy = false;
+  var rotationTween = null;
+  var orbit = { value: 0 };
+  var tiltX = null;
+  var tiltY = null;
+  var cards = [];
+  var originals = [];
+  var cardWidth = 150;
+  var cardHeight = 112;
+
+  function photos() {
+    return Array.prototype.slice.call(grid.querySelectorAll('.gallery-tile img')).filter(function (img) {
+      var tile = img.closest('.gallery-tile');
+      return tile && !tile.hidden && tile.offsetParent !== null;
+    });
+  }
+
+  function syncButton() {
+    var n = photos().length;
+    var take = Math.min(n, MAX_PHOTOS);
+    btn.disabled = n < 2;
+    hint.textContent = n < 2
+      ? '至少需要两张照片，才能开启时光画廊。'
+      : '取前 ' + take + ' 张照片，开启旋转的时光画廊。';
+  }
+
+  function isMobile() {
+    return window.matchMedia('(max-width: 760px)').matches;
+  }
+
+  function makeFlight(rect, src) {
+    var f = document.createElement('div');
+    f.className = 'memory-ring-flight';
+    f.style.left = rect.left + 'px';
+    f.style.top = rect.top + 'px';
+    f.style.width = rect.width + 'px';
+    f.style.height = rect.height + 'px';
+    f.style.opacity = '0';
+    var img = document.createElement('img');
+    img.src = src;
+    img.alt = '';
+    f.appendChild(img);
+    fly.appendChild(f);
+    return f;
+  }
+
+  function stopMotion() {
+    if (rotationTween) {
+      rotationTween.kill();
+      rotationTween = null;
+    }
+    if (tiltX) {
+      tiltX.kill();
+      tiltY.kill();
+      tiltX = tiltY = null;
+    }
+    gsap.killTweensOf(scene);
+    gsap.set(scene, { rotationX: 0, rotationY: 0 });
+  }
+
+  function applyOrbit() {
+    cards.forEach(function (card) {
+      var a = card._baseAngle + orbit.value;
+      var x = Math.cos(a) * card._radiusX;
+      var y = Math.sin(a) * card._radiusY;
+      var z = Math.sin(a) * 34;
+      gsap.set(card, {
+        x: x, y: y, z: z,
+        rotationY: -Math.sin(a) * 16,
+        rotationZ: card._baseTilt,
+        scale: card._baseScale
+      });
+      card.style.zIndex = String(100 + Math.round(Math.cos(a) * 45));
+    });
+  }
+
+  function startMotion() {
+    if (rotationTween) rotationTween.kill();
+    orbit.value = 0;
+    applyOrbit();
+    rotationTween = gsap.to(orbit, {
+      value: Math.PI * 2,
+      duration: isMobile() ? 58 : 48,
+      repeat: -1,
+      ease: 'none',
+      onUpdate: applyOrbit
+    });
+  }
+
+  function openRing() {
+    if (isOpen || busy) return;
+    var imgs = photos().slice(0, MAX_PHOTOS);
+    if (imgs.length < 2) {
+      syncButton();
+      return;
+    }
+
+    busy = true;
+    isOpen = true;
+    cards = [];
+    originals = imgs.map(function (img) {
+      var tile = img.closest('.gallery-tile');
+      var r = tile.getBoundingClientRect();
+      return { rect: { left: r.left, top: r.top, width: r.width, height: r.height }, src: img.currentSrc || img.src, alt: img.alt || '' };
+    });
+
+    overlay.hidden = false;
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('ring-open');
+    overlay.classList.add('is-open');
+    overlay.style.opacity = '0';
+    gsap.set(overlay, { opacity: 0 });
+    gsap.to(overlay, { opacity: 1, duration: 0.36, ease: 'power2.out' });
+
+    wrapper.innerHTML = '';
+    wrapper.style.transform = 'none';
+
+    var mobile = isMobile();
+    cardWidth = mobile ? Math.min(100, Math.max(72, window.innerWidth * 0.20)) : Math.min(160, Math.max(112, window.innerWidth * 0.112));
+    cardHeight = Math.round(cardWidth * 0.75);
+    var radius = Math.min(mobile ? window.innerWidth * 0.36 : window.innerWidth * 0.32, window.innerHeight * (mobile ? 0.30 : 0.42), mobile ? 190 : 405);
+    var innerRadius = radius * 0.52;
+    var innerCount = Math.floor(imgs.length / 2);
+    var outerCount = imgs.length - innerCount;
+    var targets = [];
+
+    imgs.forEach(function (img, index) {
+      var inner = index < innerCount;
+      var idx = inner ? index : index - innerCount;
+      var countInRing = inner ? innerCount : outerCount;
+      var theta = (idx / Math.max(1, countInRing)) * Math.PI * 2;
+      if (!inner) theta += Math.PI / Math.max(1, outerCount);
+      var ringRadius = inner ? innerRadius : radius;
+      var x = Math.cos(theta) * ringRadius;
+      var y = Math.sin(theta) * ringRadius * 0.60;
+      var z = Math.sin(theta) * 34;
+      var rotY = -Math.sin(theta) * 16;
+      var rotZ = ((index % 5) - 2) * 1.8;
+      var scale = 0.88 + ((index * 13) % 19) / 100;
+
+      var card = document.createElement('div');
+      card.className = 'memory-ring-card';
+      card.style.width = cardWidth + 'px';
+      card.style.height = cardHeight + 'px';
+      card.style.marginLeft = (-cardWidth / 2) + 'px';
+      card.style.marginTop = (-cardHeight / 2) + 'px';
+      card.style.zIndex = String(10 + index);
+      var photo = document.createElement('img');
+      photo.className = 'ring-card-face ring-card-front';
+      photo.src = img.currentSrc || img.src;
+      photo.alt = img.alt || '';
+      var photoBack = document.createElement('img');
+      photoBack.className = 'ring-card-face ring-card-back';
+      photoBack.src = photo.src;
+      photoBack.alt = '';
+      card.appendChild(photo);
+      card.appendChild(photoBack);
+      card._ringZ = z;
+      card._ringScale = scale;
+      card._ringIndex = 10 + index;
+      card._baseAngle = theta;
+      card._radiusX = ringRadius;
+      card._radiusY = ringRadius * 0.60;
+      card._baseScale = scale;
+      card._baseTilt = rotZ;
+
+      gsap.set(card, {
+        x: x, y: y, z: z,
+        rotationY: rotY, rotationZ: rotZ, scale: scale,
+        opacity: 0
+      });
+
+      card.addEventListener('mouseenter', function () {
+        if (!isOpen || busy) return;
+        if (rotationTween) rotationTween.pause();
+        cards.forEach(function (c) { if (c !== card) c.classList.add('is-dimmed'); });
+        card.classList.add('is-hovered');
+        card.style.zIndex = '1000';
+        gsap.to(card, { scale: Math.min(1.25, scale * 1.28), z: z + 90, duration: 0.32, ease: 'power2.out' });
+      });
+
+      card.addEventListener('mouseleave', function () {
+        if (!isOpen || busy) return;
+        card.classList.remove('is-hovered');
+        cards.forEach(function (c) { c.classList.remove('is-dimmed'); });
+        card.style.zIndex = String(card._ringIndex);
+        gsap.to(card, { scale: card._ringScale, z: card._ringZ, duration: 0.32, ease: 'power2.out' });
+        if (rotationTween) rotationTween.resume();
+      });
+
+      wrapper.appendChild(card);
+      cards.push(card);
+    });
+
+    // measure the projected positions while cards are still transparent
+    targets = cards.map(function (card) { return card.getBoundingClientRect(); });
+
+    fly.innerHTML = '';
+    var flights = cards.map(function (card, i) {
+      return makeFlight(originals[i].rect, originals[i].src);
+    });
+
+    var tl = gsap.timeline({
+      onComplete: function () {
+        fly.innerHTML = '';
+        cards.forEach(function (card) { gsap.set(card, { opacity: 1 }); });
+        count.textContent = '共 ' + imgs.length + ' 张';
+        startMotion();
+        busy = false;
+      }
+    });
+
+    flights.forEach(function (f, i) {
+      var t = targets[i];
+      tl.to(f, {
+        left: t.left, top: t.top, width: t.width, height: t.height,
+        opacity: 1,
+        duration: 1.02,
+        ease: 'power3.inOut'
+      }, i * 0.035);
+    });
+    tl.to({}, { duration: 0.12 });
+  }
+
+  function closeRing() {
+    if (!isOpen || busy) return;
+    busy = true;
+    stopMotion();
+
+    var current = cards.map(function (card) { return card.getBoundingClientRect(); });
+    var flights = cards.map(function (card, i) {
+      return makeFlight(current[i], originals[i].src);
+    });
+    cards.forEach(function (card) { gsap.set(card, { opacity: 0 }); });
+
+    var tl = gsap.timeline({
+      onComplete: function () {
+        overlay.classList.remove('is-open');
+        overlay.hidden = true;
+        overlay.setAttribute('aria-hidden', 'true');
+        gsap.set(overlay, { opacity: 0 });
+        document.body.classList.remove('ring-open');
+        wrapper.innerHTML = '';
+        fly.innerHTML = '';
+        cards = [];
+        count.textContent = '';
+        isOpen = false;
+        busy = false;
+        syncButton();
+      }
+    });
+
+    flights.forEach(function (f, i) {
+      var o = originals[i].rect;
+      tl.to(f, {
+        left: o.left, top: o.top, width: o.width, height: o.height,
+        opacity: 0,
+        duration: 0.84,
+        ease: 'power3.inOut'
+      }, i * 0.018);
+    });
+    tl.to(overlay, { opacity: 0, duration: 0.42 }, 0.24);
+  }
+
+  btn.addEventListener('click', function () {
+    if (isOpen) closeRing();
+    else openRing();
+  });
+
+  closeBtn.addEventListener('click', closeRing);
+
+  overlay.addEventListener('click', function (event) {
+    if (event.target === overlay) closeRing();
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && isOpen) closeRing();
+  });
+
+  if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    scene.addEventListener('mousemove', function (event) {
+      if (!isOpen || busy) return;
+      var nx = (event.clientX - window.innerWidth / 2) / window.innerWidth;
+      var ny = (event.clientY - window.innerHeight / 2) / window.innerHeight;
+      if (!tiltX) {
+        tiltX = gsap.quickTo(scene, 'rotationX', { duration: 0.75, ease: 'power2.out' });
+        tiltY = gsap.quickTo(scene, 'rotationY', { duration: 0.75, ease: 'power2.out' });
+      }
+      tiltX(ny * 5.5);
+      tiltY(-nx * 5.5);
+    });
+    scene.addEventListener('mouseleave', function () {
+      if (!isOpen) return;
+      gsap.to(scene, { rotationX: 0, rotationY: 0, duration: 0.55, ease: 'power2.out' });
+    });
+  }
+
+  // Keep the button state in sync after uploads, deletes and scope switches.
+  if (window.MutationObserver) {
+    new MutationObserver(function () { syncButton(); }).observe(grid, {
+      childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden']
+    });
+  }
+  document.addEventListener('click', function (event) {
+    if (event.target.closest('[data-gallery-scope], .gallery-delete')) {
+      window.setTimeout(syncButton, 60);
+    }
+  });
+  window.addEventListener('load', syncButton);
+  syncButton();
+  }
+
+  function boot() {
+    if (!window.gsap) {
+      boot.tries = (boot.tries || 0) + 1;
+      if (boot.tries < 80) {
+        window.setTimeout(boot, 50);
+        return;
+      }
+      btn.disabled = true;
+      hint.textContent = '动画库加载失败，请刷新页面重试。';
+      return;
+    }
+    start();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    boot();
+  }
+})();
+</script>
+
 </body>
 </html>
