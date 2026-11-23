@@ -20467,7 +20467,8 @@ function friendlyRemoteError(error) {
       } else {
         location.reload();
       }
-      return false;
+      // 初次/版本变化时写入远端后必须继续启动 watcher，否则本机后续编辑不会上传。
+      return true;
     }
     setSnapshot(remoteMembers, remoteTeachers);
     return true;
