@@ -22516,14 +22516,49 @@ function friendlyRemoteError(error) {
       if (!res || res.ok === false) throw new Error((res && res.error) || '无法读取留言。');
       var rows = res.data;
       if (!Array.isArray(rows)) return;
-      if (rows.length > 0 || state.messages.length === 0) {
-        state.messages = rows.map(normalizeMessage).filter(function (r) { return r && r.id && r.member_id; });
-        saveCache();
-        decorateCards();
-      }
+      var remote = rows.map(normalizeMessage).filter(function (r) { return r && r.id && r.member_id; });
+      var remoteIds = {};
+      remote.forEach(function (r) { remoteIds[String(r.id)] = true; });
+      /* 服务端已删除的留言必须消失；只保留尚未同步成功的 local-* 留言。 */
+      var localOnly = state.messages.filter(function (m) {
+        return m && String(m.id).indexOf('local-') === 0 && !remoteIds[String(m.id)];
+      });
+      state.messages = sortMessages(remote.concat(localOnly));
+      saveCache();
+      decorateCards();
+      if (state.member) renderMessages();
       state.remoteLoaded = true;
     } catch (e) {
       // Local cache remains the source of truth when the remote is unavailable.
+    }
+  }
+
+
+  function broadcastMessage(action, data) {
+    if (!window.__classLive) return;
+    var payload = { action: action };
+    if (data) Object.keys(data).forEach(function (k) { payload[k] = data[k]; });
+    try { window.__classLive.send('message-sync', payload); } catch (e) {}
+  }
+
+  function applyLiveMessage(detail) {
+    if (!detail || !detail.action) return;
+    if (detail.action === 'delete' && detail.id) {
+      state.messages = state.messages.filter(function (m) { return String(m.id) !== String(detail.id); });
+      saveCache();
+      decorateCards();
+      if (state.member && (!detail.member_id || String(detail.member_id) === String(memberIdOf(state.member)))) renderMessages();
+      return;
+    }
+    if (detail.action === 'upsert' && detail.row) {
+      var row = normalizeMessage(detail.row);
+      if (!row || !row.id || !row.member_id) return;
+      state.messages = state.messages.filter(function (m) { return String(m.id) !== String(row.id); });
+      state.messages.push(row);
+      state.messages = sortMessages(state.messages);
+      saveCache();
+      decorateCards();
+      if (state.member && String(row.member_id) === String(memberIdOf(state.member))) renderMessages();
     }
   }
 
@@ -22922,6 +22957,9 @@ function friendlyRemoteError(error) {
       closeComposer();
       renderMessages();
       decorateCards();
+      if (row && !String(row.id).startsWith('local-')) {
+        broadcastMessage('upsert', { row: row });
+      }
       setMessageStatus('', '');
     } catch (error) {
       setMessageStatus(error.message || '保存失败，请稍后重试。', 'error');
@@ -22965,10 +23003,12 @@ function friendlyRemoteError(error) {
   async function deleteMessage(entry) {
     if (!state.member) return;
     var payload = { p_token: token() || null, p_message_id: entry.id };
+    var remoteDeleted = false;
     if (payload.p_token && !String(entry.id).startsWith('local-')) {
       try {
         var res = await rpc('class_message_delete', payload);
         if (!res || res.ok === false) throw new Error((res && res.error) || '删除失败。');
+        remoteDeleted = true;
       } catch (e) {
         setMessageStatus('远端删除失败，已先在本机移除。' + (e.message || ''), 'error');
       }
@@ -22977,6 +23017,9 @@ function friendlyRemoteError(error) {
     saveCache();
     renderMessages();
     decorateCards();
+    if (remoteDeleted) {
+      broadcastMessage('delete', { id: entry.id, member_id: entry.member_id });
+    }
   }
 
   async function prepareImage(file) {
@@ -23265,6 +23308,13 @@ function friendlyRemoteError(error) {
       var trigger = event.target.closest('[data-member-messages]');
       if (trigger) openMessages(trigger.dataset.memberMessages, trigger);
     });
+    window.addEventListener('class-message-change', function (event) {
+      applyLiveMessage(event.detail);
+    });
+    window.setInterval(function () {
+      if (document.visibilityState !== 'visible' || state.busy) return;
+      pullRemoteMessages();
+    }, 30000);
     pullRemoteMessages();
   }
 
@@ -23500,6 +23550,41 @@ function friendlyRemoteError(error) {
       }
     }
 
+    function broadcastGallery(action, data) {
+      if (!window.__classLive) return;
+      var payload = { action: action };
+      if (data) Object.keys(data).forEach(function (k) { payload[k] = data[k]; });
+      try { window.__classLive.send('gallery-sync', payload); } catch (e) {}
+    }
+
+    function applyLiveGallery(detail) {
+      if (!detail || !detail.action || !detail.path) return;
+      var path = String(detail.path);
+      if (path.indexOf(PREFIX) !== 0) return;
+      if (detail.action === 'delete') {
+        hiddenPaths[path] = true;
+        items = items.filter(function (old) { return old.path !== path; });
+        saveCache();
+        render();
+        return;
+      }
+      if (detail.action === 'add' && !hiddenPaths[path]) {
+        var incoming = detail.item || {};
+        var item = normalizeGalleryItem({
+          path: path,
+          url: incoming.url || publicUrl(path),
+          ownerHex: incoming.ownerHex || ownerHexFromPath(path),
+          date: incoming.date || formatDate(incoming.created_at || new Date().toISOString()),
+          created_at: incoming.created_at || new Date().toISOString()
+        });
+        items = items.filter(function (old) { return old.path !== item.path; });
+        items.unshift(item);
+        items = items.slice(0, 120);
+        saveCache();
+        render();
+      }
+    }
+
     function canDeleteGallery(item) {
       var auth = currentAuth();
       if (!auth) return false;
@@ -23545,6 +23630,7 @@ function friendlyRemoteError(error) {
         items = items.filter(function (old) { return old.path !== item.path; });
         saveCache();
         render();
+        broadcastGallery('delete', { path: item.path });
         setStatus(removedFromStorage ? '照片已删除。' : '已从图库移除；云端原文件暂未清理。', removedFromStorage ? 'ok' : 'error');
       } catch (e) {
         setStatus(e.message || '删除失败，请稍后重试。', 'error');
@@ -23677,13 +23763,15 @@ function friendlyRemoteError(error) {
         items = remote;
         saveCache();
         render();
-        setStatus(items.length ? '已同步 ' + items.length + ' 张图库照片。' : '图库尚无照片，点右上角上传第一张。', 'ok');
+        if (showMessage !== false) setStatus(items.length ? '已同步 ' + items.length + ' 张图库照片。' : '图库尚无照片，点右上角上传第一张。', 'ok');
       } catch (e) {
         render();
-        if (items.length) {
-          setStatus('远端暂时不可用，当前显示本机缓存。', 'error');
-        } else {
-          setStatus('图库暂时无法读取，请稍后点「刷新」重试。', 'error');
+        if (showMessage !== false) {
+          if (items.length) {
+            setStatus('远端暂时不可用，当前显示本机缓存。', 'error');
+          } else {
+            setStatus('图库暂时无法读取，请稍后点「刷新」重试。', 'error');
+          }
         }
       } finally {
         loading = false;
@@ -23850,6 +23938,7 @@ function friendlyRemoteError(error) {
           items.unshift(item);
           saveCache();
           render();
+          broadcastGallery('add', { item: item });
           success += 1;
         } catch (e) {
           failed += 1;
@@ -23902,6 +23991,13 @@ function friendlyRemoteError(error) {
       if (dom.refresh) {
         dom.refresh.addEventListener('click', function () { refreshGallery(true); });
       }
+      window.addEventListener('class-gallery-change', function (event) {
+        applyLiveGallery(event.detail);
+      });
+      window.setInterval(function () {
+        if (document.visibilityState !== 'visible' || loading || uploading) return;
+        refreshGallery(false);
+      }, 30000);
       refreshGallery(items.length === 0);
     }
 
@@ -23910,6 +24006,56 @@ function friendlyRemoteError(error) {
     } else {
       init();
     }
+  })();
+  </script>
+
+  <script id="class-live-sync-script">
+  /* 留言 / 图库跨端即时预览：Supabase Broadcast；数据库仍是最终依据 */
+  (function () {
+    'use strict';
+    if (!window.supabase || !window.supabase.createClient) return;
+    var SUPABASE_URL = 'https://hvdfbpufjevwlattqttn.supabase.co';
+    var SUPABASE_KEY = 'sb_publishable_tPnlZdhrpeg4TQ1lsdjp3A_WDep2zhC';
+    var client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+    });
+    var channel = client.channel('class-live-sync', {
+      config: { broadcast: { self: false } }
+    });
+    var connected = false;
+
+    function emit(name, payload) {
+      var detail = payload && payload.payload ? payload.payload : payload;
+      if (!detail) return;
+      try {
+        window.dispatchEvent(new CustomEvent(name, { detail: detail }));
+      } catch (e) {}
+    }
+
+    channel
+      .on('broadcast', { event: 'message-sync' }, function (payload) {
+        emit('class-message-change', payload);
+      })
+      .on('broadcast', { event: 'gallery-sync' }, function (payload) {
+        emit('class-gallery-change', payload);
+      })
+      .subscribe(function (status) {
+        connected = status === 'SUBSCRIBED';
+      });
+
+    function send(event, payload) {
+      if (!channel) return Promise.resolve(false);
+      try {
+        return channel.send({ type: 'broadcast', event: event, payload: payload });
+      } catch (e) {
+        return Promise.resolve(false);
+      }
+    }
+
+    window.__classLive = {
+      send: send,
+      isConnected: function () { return connected; }
+    };
   })();
   </script>
 
