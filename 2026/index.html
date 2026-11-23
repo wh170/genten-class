@@ -9068,7 +9068,7 @@ html.intro-disabled .totem-background::after {
   margin-top: 12px;
   padding: 0;
   overflow: visible;
-  perspective: 1500px;
+  perspective: 1200px;
   transform-style: preserve-3d;
 }
 .zodiac-panel .zodiac-card {
@@ -11891,8 +11891,9 @@ try {
       backface-visibility: visible;
       cursor: pointer;
       overflow: visible;
-      transition: filter .28s ease, box-shadow .28s ease;
+      transition: box-shadow .28s ease;
       will-change: transform;
+      filter: blur(var(--ring-blur, 0px));
     }
 
     .memory-ring-card .ring-card-face {
@@ -11903,8 +11904,8 @@ try {
       object-fit: cover;
       border-radius: 6px;
       background: #fffdf8;
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
+      -webkit-backface-visibility: visible;
+      backface-visibility: visible;
       pointer-events: none;
     }
 
@@ -11913,15 +11914,15 @@ try {
     }
 
     .memory-ring-card.is-hovered {
-      z-index: 1000 !important;
-      filter: brightness(1.06);
+      z-index: 10000 !important;
+      filter: blur(0px) brightness(1.06);
       box-shadow:
         0 26px 55px rgba(30, 34, 24, .32),
         0 0 28px rgba(212, 175, 55, .72);
     }
 
     .memory-ring-card.is-dimmed {
-      filter: brightness(.58) saturate(.82);
+      filter: blur(var(--ring-blur, 0px)) brightness(.58) saturate(.82);
       box-shadow: 0 5px 14px rgba(30, 34, 24, .12);
     }
 
@@ -12091,7 +12092,8 @@ try {
       background: rgba(255, 255, 255, .16) !important;
       -webkit-backdrop-filter: blur(4px) saturate(1.06);
       backdrop-filter: blur(4px) saturate(1.06);
-      filter: brightness(1.07) !important;
+      filter: blur(0px) brightness(1.07) !important;
+      z-index: 10000 !important;
       box-shadow:
         0 26px 55px rgba(0, 0, 0, .66),
         0 0 30px rgba(212, 175, 55, .62) !important;
@@ -24550,21 +24552,27 @@ function friendlyRemoteError(error) {
   function applyOrbit() {
     cards.forEach(function (card) {
       var a = card._baseAngle + orbit.value;
-      var x = Math.cos(a) * card._radiusX;
-      var y = Math.sin(a) * card._radiusY;
-      var z = Math.sin(a) * 34;
+      var depth = (Math.cos(a) + 1) / 2;
+      var x = Math.sin(a) * card._radius;
+      var z = Math.cos(a) * card._radius;
+      var scale = 0.62 + 0.55 * depth;
+      var blur = (1 - depth) * 1.8;
       gsap.set(card, {
-        x: x, y: y, z: z,
-        rotationY: -Math.sin(a) * 16,
+        x: x, y: 0, z: z,
+        rotationY: a * 180 / Math.PI,
         rotationZ: card._baseTilt,
-        scale: card._baseScale
+        scale: scale
       });
-      card.style.zIndex = String(100 + Math.round(Math.cos(a) * 45));
+      card.style.setProperty('--ring-blur', blur.toFixed(2) + 'px');
+      card.style.zIndex = String(100 + Math.round(((z + card._radius) / (2 * card._radius)) * 900));
+      card._ringZ = z;
+      card._ringScale = scale;
     });
   }
 
   function startMotion() {
     if (rotationTween) rotationTween.kill();
+    gsap.set(wrapper, { rotationX: -18, rotationY: 0 });
     orbit.value = 0;
     applyOrbit();
     rotationTween = gsap.to(orbit, {
@@ -24686,27 +24694,20 @@ function friendlyRemoteError(error) {
     wrapper.style.transform = 'none';
 
     var mobile = isMobile();
-    cardWidth = mobile ? Math.min(92, Math.max(64, window.innerWidth * 0.17)) : Math.min(160, Math.max(112, window.innerWidth * 0.112));
+    cardWidth = mobile ? Math.min(88, Math.max(60, window.innerWidth * 0.16)) : Math.min(150, Math.max(104, window.innerWidth * 0.105));
     cardHeight = Math.round(cardWidth * 0.75);
-    var radius = Math.min(mobile ? window.innerWidth * 0.38 : window.innerWidth * 0.32, window.innerHeight * (mobile ? 0.30 : 0.42), mobile ? 178 : 405);
-    var innerRadius = radius * 0.52;
-    var innerCount = Math.floor(imgs.length / 2);
-    var outerCount = imgs.length - innerCount;
+    var radius = Math.min(mobile ? window.innerWidth * 0.44 : window.innerWidth * 0.30, window.innerHeight * (mobile ? 0.30 : 0.50), mobile ? 185 : 390);
     var targets = [];
+    gsap.set(wrapper, { rotationX: -18, rotationY: 0 });
 
     imgs.forEach(function (img, index) {
-      var inner = index < innerCount;
-      var idx = inner ? index : index - innerCount;
-      var countInRing = inner ? innerCount : outerCount;
-      var theta = (idx / Math.max(1, countInRing)) * Math.PI * 2;
-      if (!inner) theta += Math.PI / Math.max(1, outerCount);
-      var ringRadius = inner ? innerRadius : radius;
-      var x = Math.cos(theta) * ringRadius;
-      var y = Math.sin(theta) * ringRadius * 0.60;
-      var z = Math.sin(theta) * 34;
-      var rotY = -Math.sin(theta) * 16;
-      var rotZ = ((index % 5) - 2) * 1.8;
-      var scale = 0.88 + ((index * 13) % 19) / 100;
+      var theta = (index / Math.max(1, imgs.length)) * Math.PI * 2;
+      var depth = (Math.cos(theta) + 1) / 2;
+      var scale = 0.62 + 0.55 * depth;
+      var x = Math.sin(theta) * radius;
+      var z = Math.cos(theta) * radius;
+      var rotZ = ((index % 3) - 1) * 0.7;
+      var rotY = theta * 180 / Math.PI;
 
       var card = document.createElement('div');
       card.className = 'memory-ring-card';
@@ -24714,7 +24715,8 @@ function friendlyRemoteError(error) {
       card.style.height = cardHeight + 'px';
       card.style.marginLeft = (-cardWidth / 2) + 'px';
       card.style.marginTop = (-cardHeight / 2) + 'px';
-      card.style.zIndex = String(10 + index);
+      card.style.zIndex = String(100 + Math.round(((z + radius) / (2 * radius)) * 900));
+      card.style.setProperty('--ring-blur', ((1 - depth) * 1.8).toFixed(2) + 'px');
       var photo = document.createElement('img');
       photo.className = 'ring-card-face ring-card-front';
       photo.src = img.src;
@@ -24722,15 +24724,13 @@ function friendlyRemoteError(error) {
       card.appendChild(photo);
       card._ringZ = z;
       card._ringScale = scale;
-      card._ringIndex = 10 + index;
+      card._radius = radius;
       card._baseAngle = theta;
-      card._radiusX = ringRadius;
-      card._radiusY = ringRadius * 0.60;
       card._baseScale = scale;
       card._baseTilt = rotZ;
 
       gsap.set(card, {
-        x: x, y: y, z: z,
+        x: x, y: 0, z: z,
         rotationY: rotY, rotationZ: rotZ, scale: scale,
         opacity: 0
       });
@@ -24740,15 +24740,15 @@ function friendlyRemoteError(error) {
         if (rotationTween) rotationTween.pause();
         cards.forEach(function (c) { if (c !== card) c.classList.add('is-dimmed'); });
         card.classList.add('is-hovered');
-        card.style.zIndex = '1000';
-        gsap.to(card, { scale: Math.min(1.25, scale * 1.28), z: z + 90, duration: 0.32, ease: 'power2.out' });
+        card.style.zIndex = '10000';
+        gsap.to(card, { scale: Math.min(1.3, card._ringScale * 1.28), z: card._ringZ + 90, duration: 0.32, ease: 'power2.out' });
       });
 
       card.addEventListener('mouseleave', function () {
         if (!isOpen || busy) return;
         card.classList.remove('is-hovered');
         cards.forEach(function (c) { c.classList.remove('is-dimmed'); });
-        card.style.zIndex = String(card._ringIndex);
+        card.style.zIndex = String(100 + Math.round(((card._ringZ + card._radius) / (2 * card._radius)) * 900));
         gsap.to(card, { scale: card._ringScale, z: card._ringZ, duration: 0.32, ease: 'power2.out' });
         if (rotationTween && lightbox.hidden) rotationTween.resume();
       });
