@@ -21609,8 +21609,7 @@ function friendlyRemoteError(error) {
 })();
 
 </script>
-<script id="class-roster-v2-script">
-/* 名册实时并发 v2：一人一行 + Realtime 增量 + 无全局锁 */
+<script id="class-roster-v2-script">/* 名册实时并发 v2：一人一行 + Realtime 增量 + 无全局锁 */
 (function () {
   'use strict';
 
@@ -21889,6 +21888,51 @@ function friendlyRemoteError(error) {
     if (changed) scheduleRender();
   }
 
+  // 免费加速：本地改完先广播给其他客户端，数据库仍在后台落库。
+  // 广播只用于即时展示，最终数据以 Postgres 行为准。
+  function broadcastPreview(ops) {
+    if (!active || stopped || !channel || channelStatus !== 'SUBSCRIBED') return Promise.resolve(null);
+    if (!ops || !ops.length) return Promise.resolve(null);
+    try {
+      return channel.send({
+        type: 'broadcast',
+        event: 'roster-preview',
+        payload: { ops: ops.slice(0, 40), ts: Date.now() }
+      }).catch(function (e) {
+        console.warn('[roster-v2] 即时广播失败', e);
+        return null;
+      });
+    } catch (e) {
+      console.warn('[roster-v2] 即时广播失败', e);
+      return Promise.resolve(null);
+    }
+  }
+
+  function handlePreview(message) {
+    if (!active || stopped) return;
+    var payload = message && message.payload ? message.payload : message;
+    if (!payload || !Array.isArray(payload.ops)) return;
+    var changed = false;
+    for (var i = 0; i < payload.ops.length; i++) {
+      var op = payload.ops[i];
+      if (!op || (op.collection !== 'members' && op.collection !== 'teachers')) continue;
+      var id = op.id != null ? String(op.id) : '';
+      if (!id) continue;
+      // 本机正在改这条：等本机推送，避免预览覆盖输入。
+      if (getDirtyMap(op.collection)[id]) continue;
+      var serverMap = getServerMap(op.collection);
+      if (op.op === 'delete') {
+        delete serverMap[id];
+        if (removeLocal(op.collection, id)) changed = true;
+      } else if (op.op === 'upsert' && op.item && String(op.item.id) === id) {
+        var item = op.item;
+        serverMap[id] = clone(item);
+        if (upsertLocal(op.collection, item)) changed = true;
+      }
+    }
+    if (changed) scheduleRender();
+  }
+
   function ensureRealtimeClient() {
     if (client) return Promise.resolve(client);
     if (window.supabase && typeof window.supabase.createClient === 'function') {
@@ -21925,7 +21969,10 @@ function friendlyRemoteError(error) {
     ensureRealtimeClient().then(function (c) {
       if (!c || stopped) { startPolling(8000); return; }
       try {
-        channel = c.channel('class-roster-v2');
+        channel = c.channel('class-roster-v2', { config: { broadcast: { self: false } } });
+        channel.on('broadcast', { event: 'roster-preview' }, function (message) {
+          handlePreview(message);
+        });
         channel.on('postgres_changes', { event: '*', schema: 'public', table: 'class_members' }, function (payload) {
           handlePayload('members', payload);
         });
@@ -22123,6 +22170,7 @@ function friendlyRemoteError(error) {
     if (busy || stopped) return Promise.resolve();
     if (!getToken()) return Promise.resolve();
     var batch = ops.slice(0, 100);
+    broadcastPreview(batch);
     busy = true;
     lastPushAt = Date.now();
     var task;
@@ -22208,6 +22256,7 @@ function friendlyRemoteError(error) {
     get server() { return { members: serverMembers, teachers: serverTeachers }; },
     get local() { return { members: getMembers(), teachers: getTeachers() }; },
     flush: function () { return push(collectOps()); },
+    broadcast: function (ops) { return broadcastPreview(ops || []); },
     reconcile: reconcile,
     tick: tick
   };
@@ -22218,7 +22267,6 @@ function friendlyRemoteError(error) {
     probe();
   }
 })();
-
 </script>
 
 <script>
