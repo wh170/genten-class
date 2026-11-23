@@ -10866,6 +10866,21 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
   #splashScreen .splash-glow,
   #splashScreen .splash-quote { display: none !important; }
 
+  /* 去掉卷轴后方残留的中心光斑与底部金色雾光 */
+  #splashScreen .splash-mist { display: none !important; }
+  #splashScreen .splash-dim::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse 38% 62% at 50% 55%,
+      rgba(3,9,12,.96) 0%,
+      rgba(3,9,12,.88) 30%,
+      rgba(3,9,12,.58) 55%,
+      rgba(3,9,12,.18) 76%,
+      transparent 100%);
+  }
+
   #splashScreen .scroll-container {
     position: absolute;
     left: 50%;
