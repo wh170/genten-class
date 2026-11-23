@@ -11025,7 +11025,7 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
   #splashScreen .scroll-rod--bottom { top: -14px; z-index: 4; }
 
   /* 首帧：卷轴不直接出现，等加载页完全退场 */
-  #splashScreen.scroll-armed .scroll-container { opacity: 0; }
+  #splashScreen.scroll-armed .scroll-container { opacity: 1; }
   #splashScreen.scroll-armed .scroll-reveal { clip-path: inset(0 0 100% 0); }
   #splashScreen.scroll-armed .scroll-char { opacity: 0; transform: translateY(-10px); filter: blur(6px); }
   #splashScreen.scroll-armed .scroll-rod--bottom { transform: translateY(0); }
@@ -25030,14 +25030,13 @@ function friendlyRemoteError(error) {
     splash.classList.remove('scroll-armed');
 
     var H = scroll.getBoundingClientRect().height;
-    window.gsap.set(container, { opacity: 0 });
+    window.gsap.set(container, { opacity: 1 });
     window.gsap.set(reveal, { clipPath: 'inset(0 0 100% 0)' });
     window.gsap.set(bottom, { y: 0 });
     window.gsap.set(chars, { opacity: 0, y: -10, filter: 'blur(6px)' });
 
-    var tl = window.gsap.timeline({ delay: 0.06 });
-    tl.to(container, { opacity: 1, duration: 0.36, ease: 'power1.out' }, 0)
-      .to(reveal, { clipPath: 'inset(0 0 0% 0)', duration: 1.5, ease: 'power2.inOut' }, 0.04)
+    var tl = window.gsap.timeline({ delay: 0.04 });
+    tl.to(reveal, { clipPath: 'inset(0 0 0% 0)', duration: 1.5, ease: 'power2.inOut' }, 0.04)
       .to(bottom, { y: H, duration: 1.5, ease: 'power2.inOut' }, 0.04)
 
     chars.forEach(function (ch) {
