@@ -12026,6 +12026,63 @@ try {
     .memory-ring-card,
     .memory-ring-flight { touch-action: manipulation; }
 
+
+    .memory-ring-lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 19000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 42px 28px;
+      background:
+        radial-gradient(circle at 50% 45%, rgba(18, 48, 39, .92) 0%, rgba(2, 13, 11, .985) 62%, #010908 100%);
+      opacity: 0;
+      transition: opacity .18s ease;
+    }
+
+    .memory-ring-lightbox[hidden] { display: none !important; }
+    .memory-ring-lightbox.is-open { opacity: 1; }
+
+    .memory-ring-lightbox img {
+      display: block;
+      max-width: min(92vw, 1240px);
+      max-height: 82vh;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border: 6px solid #fffdf7;
+      border-radius: 8px;
+      background: #f7f2e8;
+      box-shadow: 0 28px 80px rgba(0, 0, 0, .55), 0 0 0 1px rgba(211, 181, 124, .55);
+    }
+
+    .memory-ring-lightbox-close {
+      position: absolute;
+      top: 22px;
+      right: 24px;
+      width: 38px;
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(213, 184, 126, .6);
+      border-radius: 50%;
+      background: rgba(8, 27, 23, .72);
+      color: #f2e7ca;
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .memory-ring-lightbox-close:hover { background: #fbf5e6; color: #17392e; }
+
+    @media (max-width: 760px) {
+      .memory-ring-lightbox { padding: 32px 14px; }
+      .memory-ring-lightbox img { max-width: 94vw; max-height: 78vh; border-width: 4px; }
+      .memory-ring-lightbox-close { top: 14px; right: 14px; width: 34px; height: 34px; }
+    }
+
     body.ring-open { overflow: hidden !important; }
 
     @media (max-width: 760px) {
@@ -22838,8 +22895,13 @@ function friendlyRemoteError(error) {
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4.8c2.8-.9 4.9-.4 6 .9 1.1-1.3 3.2-1.8 6-.9v13.5c-2.8-.9-4.9-.4-6 .9-1.1-1.3-3.2-1.8-6-.9V4.8Z"/><path d="M12 5.7v13.5"/></svg>
       收起画廊
     </button>
-    <p class="memory-ring-hint">移动鼠标感受 3D 视差 · 悬停照片可查看</p>
+    <p class="memory-ring-hint">移动鼠标感受 3D 视差 · 点击照片查看原图</p>
     <p class="memory-ring-count" id="memoryRingCount"></p>
+  </div>
+
+  <div class="memory-ring-lightbox" id="memoryRingLightbox" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="查看照片">
+    <button class="memory-ring-lightbox-close" id="memoryRingLightboxClose" type="button" aria-label="关闭照片">×</button>
+    <img id="memoryRingLightboxImg" alt="">
   </div>
 
   <script id="memory-book-script">
@@ -24324,8 +24386,11 @@ function friendlyRemoteError(error) {
   var fly = document.getElementById('memoryRingFly');
   var closeBtn = document.getElementById('memoryRingClose');
   var count = document.getElementById('memoryRingCount');
+  var lightbox = document.getElementById('memoryRingLightbox');
+  var lightboxImg = document.getElementById('memoryRingLightboxImg');
+  var lightboxClose = document.getElementById('memoryRingLightboxClose');
 
-  if (!grid || !btn || !hint || !overlay || !scene || !wrapper || !fly || !closeBtn || !count) return;
+  if (!grid || !btn || !hint || !overlay || !scene || !wrapper || !fly || !closeBtn || !count || !lightbox || !lightboxImg || !lightboxClose) return;
 
   function start() {
   var isOpen = false;
@@ -24438,6 +24503,8 @@ function friendlyRemoteError(error) {
       return { rect: { left: r.left, top: r.top, width: r.width, height: r.height }, src: img.currentSrc || img.src, alt: img.alt || '' };
     });
 
+    lightbox.hidden = true;
+    lightbox.classList.remove('is-open');
     overlay.hidden = false;
     overlay.setAttribute('aria-hidden', 'false');
     document.body.classList.add('ring-open');
@@ -24514,7 +24581,21 @@ function friendlyRemoteError(error) {
         cards.forEach(function (c) { c.classList.remove('is-dimmed'); });
         card.style.zIndex = String(card._ringIndex);
         gsap.to(card, { scale: card._ringScale, z: card._ringZ, duration: 0.32, ease: 'power2.out' });
-        if (rotationTween) rotationTween.resume();
+        if (rotationTween && lightbox.hidden) rotationTween.resume();
+      });
+
+      card.tabIndex = 0;
+      card.setAttribute('role', 'button');
+      card.setAttribute('aria-label', '查看照片');
+      card.addEventListener('click', function (event) {
+        event.stopPropagation();
+        if (!busy) openLightbox(index);
+      });
+      card.addEventListener('keydown', function (event) {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (!busy) openLightbox(index);
       });
 
       wrapper.appendChild(card);
@@ -24555,23 +24636,40 @@ function friendlyRemoteError(error) {
     tl.to({}, { duration: 0.06 });
   }
 
+  function openLightbox(index) {
+    var item = originals[index];
+    if (!item) return;
+    if (rotationTween) rotationTween.pause();
+    lightboxImg.src = item.src;
+    lightboxImg.alt = item.alt || '画廊照片';
+    lightbox.hidden = false;
+    lightbox.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(function () { lightbox.classList.add('is-open'); });
+    lightboxClose.focus({ preventScroll: true });
+  }
+
+  function closeLightbox() {
+    if (!lightbox || lightbox.hidden) return;
+    lightbox.classList.remove('is-open');
+    lightbox.hidden = true;
+    lightbox.setAttribute('aria-hidden', 'true');
+    lightboxImg.removeAttribute('src');
+    if (isOpen && !busy && rotationTween) rotationTween.resume();
+  }
+
   function closeRing() {
     if (!isOpen || busy) return;
+    if (!lightbox.hidden) closeLightbox();
     busy = true;
     stopMotion();
-
-    var current = cards.map(function (card) { return card.getBoundingClientRect(); });
-    var flights = cards.map(function (card, i) {
-      return makeFlight(current[i], originals[i].src);
-    });
-    cards.forEach(function (card) { gsap.set(card, { opacity: 0 }); });
+    fly.innerHTML = '';
 
     var tl = gsap.timeline({
       onComplete: function () {
         overlay.classList.remove('is-open');
         overlay.hidden = true;
         overlay.setAttribute('aria-hidden', 'true');
-        gsap.set(overlay, { opacity: 0 });
+        gsap.set(overlay, { opacity: 1 });
         document.body.classList.remove('ring-open');
         wrapper.innerHTML = '';
         fly.innerHTML = '';
@@ -24583,20 +24681,14 @@ function friendlyRemoteError(error) {
       }
     });
 
-    flights.forEach(function (f, i) {
-      var o = originals[i].rect;
-      var from = current[i];
-      tl.to(f, {
-        x: o.left - from.left,
-        y: o.top - from.top,
-        scaleX: o.width / Math.max(1, from.width),
-        scaleY: o.height / Math.max(1, from.height),
-        opacity: 0,
-        duration: 0.66,
-        ease: 'power3.inOut'
-      }, i * 0.012);
-    });
-    tl.to(overlay, { opacity: 0, duration: 0.36 }, 0.2);
+    tl.to(cards, {
+      opacity: 0,
+      scale: 0.9,
+      duration: 0.22,
+      stagger: 0.006,
+      ease: 'power2.in'
+    }, 0);
+    tl.to(overlay, { opacity: 0, duration: 0.28, ease: 'power2.out' }, 0);
   }
 
   btn.addEventListener('click', function () {
@@ -24610,8 +24702,15 @@ function friendlyRemoteError(error) {
     if (event.target === overlay) closeRing();
   });
 
+  lightbox.addEventListener('click', function (event) {
+    if (event.target === lightbox) closeLightbox();
+  });
+  lightboxClose.addEventListener('click', closeLightbox);
+
   document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape' && isOpen) closeRing();
+    if (event.key !== 'Escape') return;
+    if (!lightbox.hidden) { closeLightbox(); return; }
+    if (isOpen) closeRing();
   });
 
   if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
