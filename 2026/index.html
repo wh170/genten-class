@@ -18740,6 +18740,12 @@ try {
         sanitizeFilters();
         refreshAll();
         syncAuthControls();
+        if (window.__classRosterV2 && typeof window.__classRosterV2.deleteRow === 'function') {
+          window.__classRosterV2.deleteRow('members', memberId).catch(function (error) {
+            console.warn('[class-roster-v2] 云端删除失败', error);
+            showToast('本机已删除，但云端同步失败；请刷新页面或稍后重试。', 'error');
+          });
+        }
         showToast('已移除「' + member.name + '」的资料。');
       },
     });
@@ -21609,7 +21615,8 @@ function friendlyRemoteError(error) {
 })();
 
 </script>
-<script id="class-roster-v2-script">/* 名册实时并发 v2：一人一行 + Realtime 增量 + 无全局锁 */
+<script id="class-roster-v2-script">
+/* 名册实时并发 v2：一人一行 + Realtime 增量 + 无全局锁 */
 (function () {
   'use strict';
 
@@ -22120,9 +22127,26 @@ function friendlyRemoteError(error) {
       });
     } else if (auth.role === 'student') {
       var sid = String(auth.studentId || '');
-      collectOne('members', getMembers(), serverMembers, dirtyMembers, function (item) {
+      var ownSeen = Object.create(null);
+      var localList = getMembers();
+      for (var li = 0; li < localList.length; li++) {
+        var lm = localList[li];
+        if (String(lm.studentId || lm.student_id || '') === sid && idOf(lm)) ownSeen[idOf(lm)] = 1;
+      }
+      collectOne('members', localList, serverMembers, dirtyMembers, function (item) {
         return String(item.studentId || item.student_id || '') === sid;
       });
+      // 学生删掉自己的记录后，本机列表里已经没有这一行；
+      // 这里必须显式补一条 delete，否则云端永远不会收到删除。
+      var serverIds = Object.keys(serverMembers);
+      for (var si = 0; si < serverIds.length; si++) {
+        var rid = serverIds[si];
+        var remote = serverMembers[rid];
+        if (!remote || ownSeen[rid]) continue;
+        if (String(remote.studentId || remote.student_id || '') !== sid) continue;
+        ops.push({ collection: 'members', op: 'delete', id: rid });
+        dirtyMembers[rid] = 1;
+      }
     }
     return ops;
   }
@@ -22146,14 +22170,31 @@ function friendlyRemoteError(error) {
   }
   function pushStudent(ops) {
     var own = null;
+    var deletes = [];
     for (var i = 0; i < ops.length; i++) {
-      if (ops[i].collection === 'members' && ops[i].op === 'upsert') { own = ops[i]; break; }
+      var op = ops[i];
+      if (op.collection !== 'members') continue;
+      if (op.op === 'upsert' && !own) own = op;
+      else if (op.op === 'delete') deletes.push(op);
     }
-    if (!own) return Promise.resolve();
-    return rpc('class_member_save_self_v2', { p_token: getToken(), p_member: own.item }, 10000).then(function (res) {
-      if (!res || res.ok !== true) throw new Error((res && res.error) || '个人资料保存失败');
-      markPushed([own]);
+    var chain = Promise.resolve();
+    if (own) {
+      chain = chain.then(function () {
+        return rpc('class_member_save_self_v2', { p_token: getToken(), p_member: own.item }, 10000).then(function (res) {
+          if (!res || res.ok !== true) throw new Error((res && res.error) || '个人资料保存失败');
+          markPushed([own]);
+        });
+      });
+    }
+    deletes.forEach(function (del) {
+      chain = chain.then(function () {
+        return rpc('class_member_delete_self_v2', { p_token: getToken(), p_member_id: del.id }, 10000).then(function (res) {
+          if (!res || res.ok !== true) throw new Error((res && res.error) || '个人资料删除失败');
+          markPushed([del]);
+        });
+      });
     });
+    return chain;
   }
   function pushTeacher(ops) {
     var own = null;
@@ -22248,6 +22289,30 @@ function friendlyRemoteError(error) {
     });
   }
 
+  // 直接删除一行：不依赖 tick 是否已经收集到 delete，管理员/学生各走自己的 RPC。
+  function deleteRow(collection, id) {
+    if (!id || !getToken()) return Promise.resolve(false);
+    var op = { collection: collection, op: 'delete', id: String(id) };
+    broadcastPreview([op]);
+    var task;
+    if (isAdmin()) {
+      task = rpc('class_roster_apply', { p_token: getToken(), p_ops: [op] }, 12000);
+    } else if (role() === 'student' && collection === 'members') {
+      task = rpc('class_member_delete_self_v2', { p_token: getToken(), p_member_id: String(id) }, 10000);
+    } else {
+      return Promise.resolve(false);
+    }
+    return task.then(function (res) {
+      if (!res || res.ok !== true) throw new Error((res && res.error) || '云端删除失败');
+      var map = getServerMap(collection);
+      var dirty = getDirtyMap(collection);
+      delete map[op.id];
+      delete dirty[op.id];
+      scheduleRender();
+      return true;
+    });
+  }
+
   // Debug/load-test surface for the current page; not used by UI.
   window.__classRosterV2 = {
     get active() { return active; },
@@ -22257,6 +22322,7 @@ function friendlyRemoteError(error) {
     get local() { return { members: getMembers(), teachers: getTeachers() }; },
     flush: function () { return push(collectOps()); },
     broadcast: function (ops) { return broadcastPreview(ops || []); },
+    deleteRow: deleteRow,
     reconcile: reconcile,
     tick: tick
   };
