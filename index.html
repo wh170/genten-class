@@ -12027,6 +12027,91 @@ try {
     .memory-ring-flight { touch-action: manipulation; }
 
 
+    /* 时光星尘 / 玻璃卡片升级 */
+    .memory-ring-overlay {
+      background:
+        radial-gradient(ellipse at 50% 36%, rgba(229, 195, 123, .15) 0%, rgba(229, 195, 123, 0) 34%),
+        radial-gradient(circle at 50% 50%, #162528 0%, #0a1518 56%, #050b0d 100%) !important;
+    }
+
+    .memory-ring-dust {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      opacity: .92;
+    }
+
+    .memory-ring-scene {
+      z-index: 1;
+    }
+
+    .memory-ring-aura {
+      width: min(92vw, 1080px) !important;
+      height: min(92vw, 1080px) !important;
+      background: radial-gradient(circle, rgba(255, 245, 207, .34) 0%, rgba(231, 190, 113, .16) 32%, rgba(231, 190, 113, 0) 70%) !important;
+      filter: blur(26px) !important;
+    }
+
+    .memory-ring-card {
+      background: rgba(255, 255, 255, .1) !important;
+      border: 1px solid rgba(212, 175, 55, .42) !important;
+      border-radius: 9px !important;
+      box-shadow:
+        0 20px 40px rgba(0, 0, 0, .58),
+        0 0 0 1px rgba(255, 246, 217, .04) inset !important;
+      overflow: hidden !important;
+    }
+
+    .memory-ring-card .ring-card-face {
+      inset: 3px !important;
+      width: calc(100% - 6px) !important;
+      height: calc(100% - 6px) !important;
+      border-radius: 7px !important;
+      background: #f3ecde !important;
+    }
+
+    .memory-ring-card::after {
+      content: '';
+      position: absolute;
+      top: -45%;
+      left: -65%;
+      width: 38%;
+      height: 190%;
+      pointer-events: none;
+      background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,250,229,.5) 48%, rgba(255,255,255,0) 100%);
+      transform: rotate(18deg) translateX(-180%);
+      opacity: 0;
+      z-index: 3;
+    }
+
+    .memory-ring-card.is-hovered {
+      background: rgba(255, 255, 255, .16) !important;
+      -webkit-backdrop-filter: blur(4px) saturate(1.06);
+      backdrop-filter: blur(4px) saturate(1.06);
+      filter: brightness(1.07) !important;
+      box-shadow:
+        0 26px 55px rgba(0, 0, 0, .66),
+        0 0 30px rgba(212, 175, 55, .62) !important;
+    }
+
+    .memory-ring-card.is-hovered::after {
+      opacity: .8;
+      transform: rotate(18deg) translateX(460%);
+      transition: transform .62s cubic-bezier(.2,.7,.25,1), opacity .2s ease;
+    }
+
+    @media (max-width: 760px) {
+      .memory-ring-aura { filter: blur(18px) !important; }
+      .memory-ring-card.is-hovered { -webkit-backdrop-filter: none; backdrop-filter: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .memory-ring-card::after { display: none; }
+    }
+
     .memory-ring-lightbox {
       position: fixed;
       inset: 0;
@@ -22884,6 +22969,7 @@ function friendlyRemoteError(error) {
   </script>
 
   <div class="memory-ring-overlay" id="memoryRingOverlay" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="时光画廊">
+    <canvas class="memory-ring-dust" id="memoryRingDust" aria-hidden="true"></canvas>
     <div class="memory-ring-scene" id="memoryRingScene">
       <div class="memory-ring-aura" aria-hidden="true"></div>
       <div class="memory-ring-stage" id="memoryRingStage">
@@ -24389,6 +24475,7 @@ function friendlyRemoteError(error) {
   var lightbox = document.getElementById('memoryRingLightbox');
   var lightboxImg = document.getElementById('memoryRingLightboxImg');
   var lightboxClose = document.getElementById('memoryRingLightboxClose');
+  var dustCanvas = document.getElementById('memoryRingDust');
 
   if (!grid || !btn || !hint || !overlay || !scene || !wrapper || !fly || !closeBtn || !count || !lightbox || !lightboxImg || !lightboxClose) return;
 
@@ -24401,6 +24488,12 @@ function friendlyRemoteError(error) {
   var tiltY = null;
   var cards = [];
   var originals = [];
+  var dustCtx = dustCanvas && dustCanvas.getContext ? dustCanvas.getContext('2d') : null;
+  var dustParticles = [];
+  var dustRaf = 0;
+  var dustW = 0;
+  var dustH = 0;
+  var dustLast = 0;
   var cardWidth = 150;
   var cardHeight = 112;
 
@@ -24486,10 +24579,78 @@ function friendlyRemoteError(error) {
     });
   }
 
+  function resizeDust() {
+    if (!dustCtx) return;
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    dustW = Math.max(1, overlay.clientWidth);
+    dustH = Math.max(1, overlay.clientHeight);
+    dustCanvas.width = Math.round(dustW * dpr);
+    dustCanvas.height = Math.round(dustH * dpr);
+    dustCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function makeDust() {
+    dustParticles = [];
+    var count = isMobile() ? 34 : 50;
+    for (var i = 0; i < count; i++) {
+      dustParticles.push({
+        x: Math.random() * dustW,
+        y: Math.random() * dustH,
+        r: 0.55 + Math.random() * 1.35,
+        speed: 0.18 + Math.random() * 0.36,
+        phase: Math.random() * Math.PI * 2,
+        drift: 0.35 + Math.random() * 0.7
+      });
+    }
+  }
+
+  function drawDust(ts) {
+    if (!isOpen || !dustCtx) return;
+    if (ts - dustLast < 38) {
+      dustRaf = requestAnimationFrame(drawDust);
+      return;
+    }
+    var dt = Math.min(2.2, (ts - dustLast) / 16.7 || 1);
+    dustLast = ts;
+    dustCtx.clearRect(0, 0, dustW, dustH);
+    dustCtx.globalCompositeOperation = 'lighter';
+    for (var i = 0; i < dustParticles.length; i++) {
+      var p = dustParticles[i];
+      p.y -= p.speed * dt;
+      p.x += Math.sin(ts * 0.00035 + p.phase) * p.drift * dt;
+      if (p.y < -8) {
+        p.y = dustH + 8 + Math.random() * 30;
+        p.x = Math.random() * dustW;
+      }
+      var twinkle = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(ts * 0.00115 + p.phase));
+      dustCtx.beginPath();
+      dustCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      dustCtx.fillStyle = 'rgba(238, 203, 128, ' + (twinkle * 0.7).toFixed(3) + ')';
+      dustCtx.fill();
+    }
+    dustCtx.globalCompositeOperation = 'source-over';
+    dustRaf = requestAnimationFrame(drawDust);
+  }
+
+  function startDust() {
+    if (!dustCtx || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    stopDust();
+    resizeDust();
+    if (!dustParticles.length) makeDust();
+    dustLast = 0;
+    dustRaf = requestAnimationFrame(drawDust);
+  }
+
+  function stopDust() {
+    if (dustRaf) cancelAnimationFrame(dustRaf);
+    dustRaf = 0;
+    if (dustCtx) dustCtx.clearRect(0, 0, dustW, dustH);
+  }
+
   function openRing() {
     if (isOpen || busy) return;
-    var imgs = photos().slice(0, MAX_PHOTOS);
-    if (imgs.length < 2) {
+    var realImgs = photos().slice(0, MAX_PHOTOS);
+    if (realImgs.length < 2) {
       syncButton();
       return;
     }
@@ -24497,16 +24658,24 @@ function friendlyRemoteError(error) {
     busy = true;
     isOpen = true;
     cards = [];
-    originals = imgs.map(function (img) {
+    var realOriginals = realImgs.map(function (img) {
       var tile = img.closest('.gallery-tile');
       var r = tile.getBoundingClientRect();
-      return { rect: { left: r.left, top: r.top, width: r.width, height: r.height }, src: img.currentSrc || img.src, alt: img.alt || '' };
+      return { rect: { left: r.left, top: r.top, width: r.width, height: r.height }, src: img.currentSrc || img.src, alt: img.alt || '', clone: false };
     });
+    originals = realOriginals.slice();
+    while (originals.length < MAX_PHOTOS) {
+      var base = realOriginals[originals.length % realOriginals.length];
+      originals.push({ rect: base.rect, src: base.src, alt: base.alt, clone: true });
+    }
+    var cloneCount = originals.length - realOriginals.length;
+    var imgs = originals;
 
     lightbox.hidden = true;
     lightbox.classList.remove('is-open');
     overlay.hidden = false;
     overlay.setAttribute('aria-hidden', 'false');
+    startDust();
     document.body.classList.add('ring-open');
     overlay.classList.add('is-open');
     overlay.style.opacity = '0';
@@ -24517,9 +24686,9 @@ function friendlyRemoteError(error) {
     wrapper.style.transform = 'none';
 
     var mobile = isMobile();
-    cardWidth = mobile ? Math.min(100, Math.max(72, window.innerWidth * 0.20)) : Math.min(160, Math.max(112, window.innerWidth * 0.112));
+    cardWidth = mobile ? Math.min(92, Math.max(64, window.innerWidth * 0.17)) : Math.min(160, Math.max(112, window.innerWidth * 0.112));
     cardHeight = Math.round(cardWidth * 0.75);
-    var radius = Math.min(mobile ? window.innerWidth * 0.46 : window.innerWidth * 0.32, window.innerHeight * (mobile ? 0.30 : 0.42), mobile ? 205 : 405);
+    var radius = Math.min(mobile ? window.innerWidth * 0.38 : window.innerWidth * 0.32, window.innerHeight * (mobile ? 0.30 : 0.42), mobile ? 178 : 405);
     var innerRadius = radius * 0.52;
     var innerCount = Math.floor(imgs.length / 2);
     var outerCount = imgs.length - innerCount;
@@ -24548,7 +24717,7 @@ function friendlyRemoteError(error) {
       card.style.zIndex = String(10 + index);
       var photo = document.createElement('img');
       photo.className = 'ring-card-face ring-card-front';
-      photo.src = img.currentSrc || img.src;
+      photo.src = img.src;
       photo.alt = img.alt || '';
       card.appendChild(photo);
       card._ringZ = z;
@@ -24607,20 +24776,22 @@ function friendlyRemoteError(error) {
 
     fly.innerHTML = '';
     var flights = cards.map(function (card, i) {
-      return makeFlight(originals[i].rect, originals[i].src);
+      return originals[i].clone ? null : makeFlight(originals[i].rect, originals[i].src);
     });
+    var cloneCards = cards.filter(function (card, i) { return originals[i].clone; });
 
     var tl = gsap.timeline({
       onComplete: function () {
         fly.innerHTML = '';
         cards.forEach(function (card) { gsap.set(card, { opacity: 1 }); });
-        count.textContent = '共 ' + imgs.length + ' 张';
+        count.textContent = '共 ' + imgs.length + ' 张' + (cloneCount ? ' · 原图 ' + realOriginals.length + ' 张' : '');
         startMotion();
         busy = false;
       }
     });
 
     flights.forEach(function (f, i) {
+      if (!f) return;
       var from = originals[i].rect;
       var t = targets[i];
       tl.to(f, {
@@ -24633,6 +24804,9 @@ function friendlyRemoteError(error) {
         ease: 'power3.inOut'
       }, i * 0.02);
     });
+    if (cloneCards.length) {
+      tl.to(cloneCards, { opacity: 1, duration: 0.42, stagger: 0.012, ease: 'power2.out' }, 0.24);
+    }
     tl.to({}, { duration: 0.06 });
   }
 
@@ -24677,6 +24851,7 @@ function friendlyRemoteError(error) {
     if (!lightbox.hidden) closeLightbox();
     busy = true;
     stopMotion();
+    stopDust();
     fly.innerHTML = '';
 
     // 收起只淡出一层遮罩，不再逐张克隆照片，避免低端设备明显卡顿。
@@ -24754,6 +24929,9 @@ function friendlyRemoteError(error) {
     }
   });
   window.addEventListener('load', syncButton);
+  window.addEventListener('resize', function () {
+    if (isOpen && dustCtx) resizeDust();
+  });
   syncButton();
   }
 
