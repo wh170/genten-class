@@ -15748,6 +15748,17 @@ try {
     scheduleRootConnectors();
   }
 
+  // 远端名册已写入 localStorage 后，不整页刷新，直接在页内重载名册并重绘。
+  window.__applyRemoteClassState = function () {
+    const loadedMembers = loadMembers();
+    state.members = loadedMembers.members;
+    const loadedTeachers = loadTeachers();
+    state.teachers = Array.isArray(loadedTeachers) ? loadedTeachers : (loadedTeachers.teachers || []);
+    refreshAll();
+    renderTeacherList();
+    if (typeof syncAuthControls === 'function') syncAuthControls();
+  };
+
 
   /* ======================================================================
      09a. 师资名录、密码编辑模式与地图显示范围
@@ -20430,8 +20441,11 @@ function friendlyRemoteError(error) {
       setMeta(remote.updated_at);
       setSnapshot(remoteMembers, remoteTeachers);
       lastSignature = signature();
-      // 远端数据写入后强制重载，确保主应用以新名册重新初始化。
-      location.reload();
+      if (typeof window.__applyRemoteClassState === 'function') {
+        window.__applyRemoteClassState();
+      } else {
+        location.reload();
+      }
       return false;
     }
     setSnapshot(remoteMembers, remoteTeachers);
@@ -20447,7 +20461,11 @@ function friendlyRemoteError(error) {
       var sig = signature();
       if (patchReloadPending && !isEditing() && sig === lastSignature) {
         patchReloadPending = false;
-        location.reload();
+        if (typeof window.__applyRemoteClassState === 'function') {
+          window.__applyRemoteClassState();
+        } else {
+          location.reload();
+        }
         return;
       }
       if (sig === lastSignature) return;
@@ -20459,7 +20477,11 @@ function friendlyRemoteError(error) {
         lastSignature = signature();
         if (result && result.reload && !isEditing()) {
           patchReloadPending = false;
-          location.reload();
+          if (typeof window.__applyRemoteClassState === 'function') {
+            window.__applyRemoteClassState();
+          } else {
+            location.reload();
+          }
           return;
         }
       } catch (e) {
@@ -20476,7 +20498,11 @@ function friendlyRemoteError(error) {
     if (!token) return;
     if (patchReloadPending) {
       patchReloadPending = false;
-      location.reload();
+      if (typeof window.__applyRemoteClassState === 'function') {
+        window.__applyRemoteClassState();
+      } else {
+        location.reload();
+      }
       return;
     }
     try {
@@ -20491,8 +20517,11 @@ function friendlyRemoteError(error) {
       setSnapshot(remote.members, remote.teachers);
       lastSignature = signature();
       busy = false;
-      // 远端名册已变化：重载页面，让主应用以新资料重新渲染。
-      location.reload();
+      if (typeof window.__applyRemoteClassState === 'function') {
+        window.__applyRemoteClassState();
+      } else {
+        location.reload();
+      }
       return;
     } catch (e) {
       busy = false;
