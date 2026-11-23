@@ -24445,11 +24445,11 @@ function friendlyRemoteError(error) {
       rotationTween.kill();
       rotationTween = null;
     }
-    if (tiltX) {
-      tiltX.kill();
-      tiltY.kill();
-      tiltX = tiltY = null;
-    }
+    // quickTo returns setter functions, not tweens: letting them go and
+    // killing the scene tweens below is enough (calling .kill() threw and
+    // left the ring stuck with busy=true).
+    tiltX = null;
+    tiltY = null;
     gsap.killTweensOf(scene);
     gsap.set(scene, { rotationX: 0, rotationY: 0 });
   }
@@ -24657,6 +24657,21 @@ function friendlyRemoteError(error) {
     if (isOpen && !busy && rotationTween) rotationTween.resume();
   }
 
+  function cardAtPoint(x, y) {
+    var best = -1;
+    var bestDist = Infinity;
+    cards.forEach(function (card, i) {
+      var r = card.getBoundingClientRect();
+      var pad = 14;
+      if (x < r.left - pad || x > r.right + pad || y < r.top - pad || y > r.bottom + pad) return;
+      var dx = x - (r.left + r.width / 2);
+      var dy = y - (r.top + r.height / 2);
+      var d = dx * dx + dy * dy;
+      if (d < bestDist) { bestDist = d; best = i; }
+    });
+    return best;
+  }
+
   function closeRing() {
     if (!isOpen || busy) return;
     if (!lightbox.hidden) closeLightbox();
@@ -24664,6 +24679,7 @@ function friendlyRemoteError(error) {
     stopMotion();
     fly.innerHTML = '';
 
+    // 收起只淡出一层遮罩，不再逐张克隆照片，避免低端设备明显卡顿。
     var tl = gsap.timeline({
       onComplete: function () {
         overlay.classList.remove('is-open');
@@ -24680,15 +24696,7 @@ function friendlyRemoteError(error) {
         syncButton();
       }
     });
-
-    tl.to(cards, {
-      opacity: 0,
-      scale: 0.9,
-      duration: 0.22,
-      stagger: 0.006,
-      ease: 'power2.in'
-    }, 0);
-    tl.to(overlay, { opacity: 0, duration: 0.28, ease: 'power2.out' }, 0);
+    tl.to(overlay, { opacity: 0, duration: 0.16, ease: 'power1.out' }, 0);
   }
 
   btn.addEventListener('click', function () {
@@ -24699,7 +24707,10 @@ function friendlyRemoteError(error) {
   closeBtn.addEventListener('click', closeRing);
 
   overlay.addEventListener('click', function (event) {
-    if (event.target === overlay) closeRing();
+    if (event.target.closest('.memory-ring-card')) return;
+    var hit = cardAtPoint(event.clientX, event.clientY);
+    if (hit >= 0) { openLightbox(hit); return; }
+    closeRing();
   });
 
   lightbox.addEventListener('click', function (event) {
