@@ -24784,7 +24784,7 @@ function friendlyRemoteError(error) {
       onComplete: function () {
         fly.innerHTML = '';
         cards.forEach(function (card) { gsap.set(card, { opacity: 1 }); });
-        count.textContent = '共 ' + imgs.length + ' 张' + (cloneCount ? ' · 原图 ' + realOriginals.length + ' 张' : '');
+        count.textContent = '共 ' + imgs.length + ' 张';
         startMotion();
         busy = false;
       }
