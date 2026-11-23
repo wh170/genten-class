@@ -24572,7 +24572,7 @@ function friendlyRemoteError(error) {
 
   function startMotion() {
     if (rotationTween) rotationTween.kill();
-    gsap.set(wrapper, { rotationX: -18, rotationY: 0 });
+    gsap.set(wrapper, { rotationX: -12, rotationY: 0 });
     orbit.value = 0;
     applyOrbit();
     rotationTween = gsap.to(orbit, {
@@ -24694,11 +24694,11 @@ function friendlyRemoteError(error) {
     wrapper.style.transform = 'none';
 
     var mobile = isMobile();
-    cardWidth = mobile ? Math.min(88, Math.max(60, window.innerWidth * 0.16)) : Math.min(150, Math.max(104, window.innerWidth * 0.105));
+    cardWidth = mobile ? Math.min(84, Math.max(58, window.innerWidth * 0.15)) : Math.min(142, Math.max(100, window.innerWidth * 0.10));
     cardHeight = Math.round(cardWidth * 0.75);
-    var radius = Math.min(mobile ? window.innerWidth * 0.44 : window.innerWidth * 0.30, window.innerHeight * (mobile ? 0.30 : 0.50), mobile ? 185 : 390);
+    var radius = Math.min(mobile ? window.innerWidth * 0.45 : window.innerWidth * 0.32, window.innerHeight * (mobile ? 0.31 : 0.55), mobile ? 190 : 410);
     var targets = [];
-    gsap.set(wrapper, { rotationX: -18, rotationY: 0 });
+    gsap.set(wrapper, { rotationX: -12, rotationY: 0 });
 
     imgs.forEach(function (img, index) {
       var theta = (index / Math.max(1, imgs.length)) * Math.PI * 2;
