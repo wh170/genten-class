@@ -24464,7 +24464,8 @@ function friendlyRemoteError(error) {
 (function () {
   'use strict';
 
-  var MAX_PHOTOS = 16;
+  var MIN_PHOTOS = 16;
+  var MAX_PHOTOS = 50;
   var grid = document.getElementById('galleryGrid');
   var btn = document.getElementById('galleryRingBtn');
   var hint = document.getElementById('galleryRingHint');
@@ -24509,10 +24510,11 @@ function friendlyRemoteError(error) {
   function syncButton() {
     var n = photos().length;
     var take = Math.min(n, MAX_PHOTOS);
+    var shown = Math.max(take, MIN_PHOTOS);
     btn.disabled = n < 2;
     hint.textContent = n < 2
       ? '至少需要两张照片，才能开启时光画廊。'
-      : '取前 ' + take + ' 张照片，开启旋转的时光画廊。';
+      : '将展示 ' + shown + ' 张照片' + (take < MIN_PHOTOS ? '（自动补位）' : '') + '，最多 ' + MAX_PHOTOS + ' 张。';
   }
 
   function isMobile() {
@@ -24553,18 +24555,18 @@ function friendlyRemoteError(error) {
     cards.forEach(function (card) {
       var a = card._baseAngle + orbit.value;
       var depth = (Math.cos(a) + 1) / 2;
-      var x = Math.sin(a) * card._radius;
-      var z = Math.cos(a) * card._radius;
+      var x = Math.sin(a) * card._ringRadius;
+      var z = Math.cos(a) * card._ringRadius;
       var scale = 0.62 + 0.55 * depth;
       var blur = (1 - depth) * 1.8;
       gsap.set(card, {
-        x: x, y: 0, z: z,
+        x: x, y: card._ringLift, z: z,
         rotationY: a * 180 / Math.PI,
         rotationZ: card._baseTilt,
         scale: scale
       });
       card.style.setProperty('--ring-blur', blur.toFixed(2) + 'px');
-      card.style.zIndex = String(100 + Math.round(((z + card._radius) / (2 * card._radius)) * 900));
+      card.style.zIndex = String(100 + Math.round(((z + card._ringRadius) / (2 * card._ringRadius)) * 900));
       card._ringZ = z;
       card._ringScale = scale;
     });
@@ -24672,7 +24674,7 @@ function friendlyRemoteError(error) {
       return { rect: { left: r.left, top: r.top, width: r.width, height: r.height }, src: img.currentSrc || img.src, alt: img.alt || '', clone: false };
     });
     originals = realOriginals.slice();
-    while (originals.length < MAX_PHOTOS) {
+    while (originals.length < MIN_PHOTOS) {
       var base = realOriginals[originals.length % realOriginals.length];
       originals.push({ rect: base.rect, src: base.src, alt: base.alt, clone: true });
     }
@@ -24694,91 +24696,130 @@ function friendlyRemoteError(error) {
     wrapper.style.transform = 'none';
 
     var mobile = isMobile();
-    cardWidth = mobile ? Math.min(84, Math.max(58, window.innerWidth * 0.15)) : Math.min(142, Math.max(100, window.innerWidth * 0.10));
-    cardHeight = Math.round(cardWidth * 0.75);
-    var radius = Math.min(mobile ? window.innerWidth * 0.45 : window.innerWidth * 0.32, window.innerHeight * (mobile ? 0.31 : 0.55), mobile ? 190 : 410);
+    var baseCardWidth = mobile ? Math.min(84, Math.max(58, window.innerWidth * 0.15)) : Math.min(142, Math.max(100, window.innerWidth * 0.10));
+    var baseRadius = Math.min(mobile ? window.innerWidth * 0.45 : window.innerWidth * 0.32, window.innerHeight * (mobile ? 0.31 : 0.55), mobile ? 190 : 410);
+    var ringCount = imgs.length <= 20 ? 1 : (imgs.length <= 36 ? 2 : 3);
+    var ratios = ringCount === 1 ? [1] : (ringCount === 2 ? [1, 0.63] : [1, 0.72, 0.48]);
+    var lifts = ringCount === 1 ? [0] : (ringCount === 2 ? [0, mobile ? -60 : -105] : [0, mobile ? -55 : -95, mobile ? -110 : -190]);
+    var ringItems = [];
     var targets = [];
     gsap.set(wrapper, { rotationX: -12, rotationY: 0 });
 
-    imgs.forEach(function (img, index) {
-      var theta = (index / Math.max(1, imgs.length)) * Math.PI * 2;
-      var depth = (Math.cos(theta) + 1) / 2;
-      var scale = 0.62 + 0.55 * depth;
-      var x = Math.sin(theta) * radius;
-      var z = Math.cos(theta) * radius;
-      var rotZ = ((index % 3) - 1) * 0.7;
-      var rotY = theta * 180 / Math.PI;
+    var r;
+    for (r = 0; r < ringCount; r++) ringItems.push([]);
+    var weightSum = ratios.reduce(function (a, b) { return a + b; }, 0);
+    var ringTotal = 0;
+    for (r = 0; r < ringCount; r++) {
+      var take = r === ringCount - 1 ? imgs.length - ringTotal : Math.floor(imgs.length * ratios[r] / weightSum);
+      if (take < 1) take = 1;
+      ringTotal += take;
+      for (var k = 0; k < take && ringItems[r].length < take; k++) {
+        var srcIndex = ringTotal - take + k;
+        if (srcIndex >= imgs.length) break;
+        ringItems[r].push({ img: imgs[srcIndex], index: srcIndex, slot: k });
+      }
+    }
+    // If floor allocation left a gap, append remaining photos to the outer ring.
+    var placed = ringItems.reduce(function (a, arr) { return a + arr.length; }, 0);
+    for (var extra = placed; extra < imgs.length; extra++) {
+      ringItems[0].push({ img: imgs[extra], index: extra, slot: ringItems[0].length });
+    }
 
-      var card = document.createElement('div');
-      card.className = 'memory-ring-card';
-      card.style.width = cardWidth + 'px';
-      card.style.height = cardHeight + 'px';
-      card.style.marginLeft = (-cardWidth / 2) + 'px';
-      card.style.marginTop = (-cardHeight / 2) + 'px';
-      card.style.zIndex = String(100 + Math.round(((z + radius) / (2 * radius)) * 900));
-      card.style.setProperty('--ring-blur', ((1 - depth) * 1.8).toFixed(2) + 'px');
-      var photo = document.createElement('img');
-      photo.className = 'ring-card-face ring-card-front';
-      photo.src = img.src;
-      photo.alt = img.alt || '';
-      card.appendChild(photo);
-      card._ringZ = z;
-      card._ringScale = scale;
-      card._radius = radius;
-      card._baseAngle = theta;
-      card._baseScale = scale;
-      card._baseTilt = rotZ;
+    ringItems.forEach(function (items, ringIndex) {
+      var ratio = ratios[ringIndex];
+      var ringRadius = baseRadius * ratio;
+      var lift = lifts[ringIndex];
+      var circumference = Math.PI * 2 * ringRadius;
+      var cw = Math.min(baseCardWidth, circumference / Math.max(1, items.length) * 0.92);
+      cw = Math.max(mobile ? 48 : 58, cw);
+      var ch = Math.round(cw * 0.75);
 
-      gsap.set(card, {
-        x: x, y: 0, z: z,
-        rotationY: rotY, rotationZ: rotZ, scale: scale,
-        opacity: 0
+      items.forEach(function (entry) {
+        var img = entry.img;
+        var index = entry.index;
+        var theta = (entry.slot / Math.max(1, items.length)) * Math.PI * 2 + ringIndex * 0.36;
+        var depth = (Math.cos(theta) + 1) / 2;
+        var scale = 0.62 + 0.55 * depth;
+        var x = Math.sin(theta) * ringRadius;
+        var z = Math.cos(theta) * ringRadius;
+        var rotZ = ((index % 3) - 1) * 0.7;
+        var rotY = theta * 180 / Math.PI;
+
+        var card = document.createElement('div');
+        card.className = 'memory-ring-card';
+        card.dataset.ring = String(ringIndex);
+        card.style.width = cw + 'px';
+        card.style.height = ch + 'px';
+        card.style.marginLeft = (-cw / 2) + 'px';
+        card.style.marginTop = (-ch / 2) + 'px';
+        card.style.zIndex = String(100 + Math.round(((z + ringRadius) / (2 * ringRadius)) * 900));
+        card.style.setProperty('--ring-blur', ((1 - depth) * 1.8).toFixed(2) + 'px');
+        var photo = document.createElement('img');
+        photo.className = 'ring-card-face ring-card-front';
+        photo.src = img.src;
+        photo.alt = img.alt || '';
+        card.appendChild(photo);
+        card._photoIndex = index;
+        card._ringZ = z;
+        card._ringScale = scale;
+        card._ringRadius = ringRadius;
+        card._ringLift = lift;
+        card._baseAngle = theta;
+        card._baseScale = scale;
+        card._baseTilt = rotZ;
+
+        gsap.set(card, {
+          x: x, y: lift, z: z,
+          rotationY: rotY, rotationZ: rotZ, scale: scale,
+          opacity: 0
+        });
+
+        card.addEventListener('mouseenter', function () {
+          if (!isOpen || busy) return;
+          if (rotationTween) rotationTween.pause();
+          cards.forEach(function (c) { if (c !== card) c.classList.add('is-dimmed'); });
+          card.classList.add('is-hovered');
+          card.style.zIndex = '10000';
+          gsap.to(card, { scale: Math.min(1.3, card._ringScale * 1.28), z: card._ringZ + 90, duration: 0.32, ease: 'power2.out' });
+        });
+
+        card.addEventListener('mouseleave', function () {
+          if (!isOpen || busy) return;
+          card.classList.remove('is-hovered');
+          cards.forEach(function (c) { c.classList.remove('is-dimmed'); });
+          card.style.zIndex = String(100 + Math.round(((card._ringZ + card._ringRadius) / (2 * card._ringRadius)) * 900));
+          gsap.to(card, { scale: card._ringScale, z: card._ringZ, duration: 0.32, ease: 'power2.out' });
+          if (rotationTween && lightbox.hidden) rotationTween.resume();
+        });
+
+        card.tabIndex = 0;
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', '查看照片');
+        card.addEventListener('click', function (event) {
+          event.stopPropagation();
+          if (!busy) openLightbox(index);
+        });
+        card.addEventListener('keydown', function (event) {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          event.stopPropagation();
+          if (!busy) openLightbox(index);
+        });
+
+        wrapper.appendChild(card);
+        cards.push(card);
       });
-
-      card.addEventListener('mouseenter', function () {
-        if (!isOpen || busy) return;
-        if (rotationTween) rotationTween.pause();
-        cards.forEach(function (c) { if (c !== card) c.classList.add('is-dimmed'); });
-        card.classList.add('is-hovered');
-        card.style.zIndex = '10000';
-        gsap.to(card, { scale: Math.min(1.3, card._ringScale * 1.28), z: card._ringZ + 90, duration: 0.32, ease: 'power2.out' });
-      });
-
-      card.addEventListener('mouseleave', function () {
-        if (!isOpen || busy) return;
-        card.classList.remove('is-hovered');
-        cards.forEach(function (c) { c.classList.remove('is-dimmed'); });
-        card.style.zIndex = String(100 + Math.round(((card._ringZ + card._radius) / (2 * card._radius)) * 900));
-        gsap.to(card, { scale: card._ringScale, z: card._ringZ, duration: 0.32, ease: 'power2.out' });
-        if (rotationTween && lightbox.hidden) rotationTween.resume();
-      });
-
-      card.tabIndex = 0;
-      card.setAttribute('role', 'button');
-      card.setAttribute('aria-label', '查看照片');
-      card.addEventListener('click', function (event) {
-        event.stopPropagation();
-        if (!busy) openLightbox(index);
-      });
-      card.addEventListener('keydown', function (event) {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        event.stopPropagation();
-        if (!busy) openLightbox(index);
-      });
-
-      wrapper.appendChild(card);
-      cards.push(card);
     });
 
     // measure the projected positions while cards are still transparent
     targets = cards.map(function (card) { return card.getBoundingClientRect(); });
 
     fly.innerHTML = '';
-    var flights = cards.map(function (card, i) {
-      return originals[i].clone ? null : makeFlight(originals[i].rect, originals[i].src);
+    var flights = cards.map(function (card) {
+      var srcItem = originals[card._photoIndex];
+      return srcItem.clone ? null : makeFlight(srcItem.rect, srcItem.src);
     });
-    var cloneCards = cards.filter(function (card, i) { return originals[i].clone; });
+    var cloneCards = cards.filter(function (card) { return originals[card._photoIndex].clone; });
 
     var tl = gsap.timeline({
       onComplete: function () {
@@ -24792,7 +24833,7 @@ function friendlyRemoteError(error) {
 
     flights.forEach(function (f, i) {
       if (!f) return;
-      var from = originals[i].rect;
+      var from = originals[cards[i]._photoIndex].rect;
       var t = targets[i];
       tl.to(f, {
         x: t.left - from.left,
