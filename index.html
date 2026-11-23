@@ -20145,6 +20145,7 @@ function friendlyRemoteError(error) {
   var snapshotMembers = null;
   var snapshotTeachers = null;
   var patchReloadPending = false;
+  var lastRemotePullAt = 0;
 
   function readJSON(key, fallback) {
     try {
@@ -20488,7 +20489,13 @@ function friendlyRemoteError(error) {
         }
         return;
       }
-      if (sig === lastSignature) return;
+      if (sig === lastSignature) {
+        if (!document.hidden && !isEditing() && Date.now() - lastRemotePullAt > 2800) {
+          lastRemotePullAt = Date.now();
+          await pullRemote();
+        }
+        return;
+      }
       busy = true;
       try {
         var result = null;
