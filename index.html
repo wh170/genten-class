@@ -11432,6 +11432,377 @@ try {
     color: #9b9a8b !important;
   }
 </style>
+
+  <style id="memory-book-style">
+    .gallery-book-bar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      margin: 20px 0 4px;
+    }
+
+    .gallery-book-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 26px;
+      border: 1px solid rgba(175, 139, 74, .55);
+      border-radius: 999px;
+      background: linear-gradient(160deg, #1c5a43, #174836);
+      color: #f8efd9;
+      font-family: inherit;
+      font-size: 13px;
+      letter-spacing: .12em;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(24, 61, 46, .2), inset 0 1px 0 rgba(255, 255, 255, .18);
+      transition: transform .25s ease, box-shadow .25s ease, opacity .25s ease;
+    }
+
+    .gallery-book-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 28px rgba(24, 61, 46, .25), inset 0 1px 0 rgba(255, 255, 255, .22);
+    }
+
+    .gallery-book-btn svg, .memory-book-close svg {
+      flex: 0 0 auto;
+      vertical-align: -3px;
+    }
+
+    .gallery-book-btn:disabled {
+      opacity: .42;
+      cursor: not-allowed;
+      filter: grayscale(.25);
+    }
+
+    .gallery-book-hint {
+      margin: 0;
+      color: #7b8879;
+      font-size: 10.5px;
+      letter-spacing: .06em;
+    }
+
+    .memory-book-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 18000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(14px, 3vw, 36px);
+      opacity: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .memory-book-overlay[hidden] { display: none; }
+    .memory-book-overlay.is-open { pointer-events: auto; }
+
+    .memory-book-backdrop {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 44%, rgba(34, 79, 63, .56), rgba(6, 22, 18, .94) 68%),
+        rgba(4, 16, 13, .92);
+      -webkit-backdrop-filter: blur(5px);
+      backdrop-filter: blur(5px);
+    }
+
+    .memory-book-stage {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: min(90vw, 1000px);
+      height: min(80vh, 700px);
+      perspective: 2000px;
+      perspective-origin: 50% 50%;
+      transform-style: preserve-3d;
+    }
+
+    .memory-book-backlight {
+      position: absolute;
+      width: min(68vw, 720px);
+      height: min(56vh, 500px);
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 229, 163, .30), rgba(250, 207, 118, .10) 45%, transparent 70%);
+      filter: blur(28px);
+      pointer-events: none;
+    }
+
+    .memory-book-shell {
+      position: relative;
+      width: min(72vw, 720px);
+      height: min(62vh, 500px);
+      transform-style: preserve-3d;
+    }
+
+    .memory-book-shell::after {
+      content: '';
+      position: absolute;
+      left: 2%;
+      right: 2%;
+      bottom: -16px;
+      height: 30px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(0, 0, 0, .58), transparent 70%);
+      filter: blur(11px);
+      transform: translateZ(-30px);
+      pointer-events: none;
+    }
+
+    .memory-book-cover {
+      position: absolute;
+      inset: -9px -12px -13px -9px;
+      border-radius: 4px 15px 15px 4px;
+      background:
+        linear-gradient(145deg, rgba(33, 91, 69, .98), rgba(9, 39, 30, .99) 62%, rgba(6, 27, 21, .99));
+      border: 1px solid rgba(195, 158, 96, .55);
+      box-shadow:
+        0 18px 30px rgba(0, 0, 0, .34),
+        inset 0 0 0 1px rgba(255, 245, 220, .08);
+      transform: translate3d(7px, 10px, -30px);
+      pointer-events: none;
+    }
+
+    .memory-book-cover::after {
+      content: '';
+      position: absolute;
+      top: 2%;
+      right: -2px;
+      bottom: 2%;
+      width: 10px;
+      border-radius: 0 8px 8px 0;
+      background: repeating-linear-gradient(0deg, #efe2ca 0 2px, #c8b58e 2px 3px);
+      opacity: .82;
+      transform: translateZ(2px);
+    }
+
+    .memory-book-spine {
+      position: absolute;
+      left: -9px;
+      top: 2.2%;
+      bottom: 2.2%;
+      z-index: 130;
+      width: 17px;
+      border-radius: 6px 0 0 6px;
+      background: linear-gradient(90deg, #08251c 0%, #1b5943 38%, #c3a066 58%, #123c2d 100%);
+      border: 1px solid rgba(210, 174, 108, .34);
+      box-shadow:
+        inset 1px 0 0 rgba(255, 238, 199, .35),
+        inset -2px 0 5px rgba(0, 0, 0, .35);
+      transform: translate3d(0, 0, 14px);
+      pointer-events: none;
+    }
+
+    .memory-book-pages {
+      position: absolute;
+      inset: 0;
+      transform-style: preserve-3d;
+    }
+
+    .memory-book-pages::after {
+      content: '';
+      position: absolute;
+      top: 1.2%;
+      right: -7px;
+      bottom: 1.2%;
+      width: 7px;
+      border-radius: 0 7px 7px 0;
+      background: repeating-linear-gradient(90deg, #f4e8d2 0 2px, #cbb891 2px 3px);
+      opacity: .86;
+      transform: translateZ(-4px);
+      pointer-events: none;
+    }
+
+    .memory-book-page {
+      position: absolute;
+      inset: 0;
+      transform-origin: left center;
+      transform-style: preserve-3d;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      border: 1px solid rgba(195, 158, 96, .78);
+      border-radius: 3px 9px 9px 3px;
+      background: #f3ead9;
+      box-shadow:
+        0 22px 36px rgba(0, 0, 0, .32),
+        inset 0 0 0 1px rgba(255, 255, 255, .48),
+        inset 7px 0 14px rgba(90, 62, 30, .10);
+      will-change: transform;
+    }
+
+    .memory-book-page-inner {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      border-radius: inherit;
+      background: #17342b;
+    }
+
+    .memory-book-page img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #17342b;
+      pointer-events: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .memory-book-page-shade {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      background: linear-gradient(90deg, rgba(10, 24, 20, .02) 0%, rgba(10, 24, 20, .42) 58%, rgba(8, 16, 14, .64) 100%);
+    }
+
+    .memory-book-page-number {
+      position: absolute;
+      right: 15px;
+      bottom: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(248, 240, 220, .78);
+      color: #50634f;
+      font-size: 9px;
+      letter-spacing: .12em;
+    }
+
+    .memory-book-nav {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      z-index: 90;
+      width: 17%;
+      border: 0;
+      background: transparent;
+      color: #f6e0ac;
+      cursor: pointer;
+      opacity: .15;
+      transition: opacity .25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .memory-book-stage:hover .memory-book-nav { opacity: .9; }
+
+    .memory-book-nav--prev { left: -1%; }
+    .memory-book-nav--next { right: -1%; }
+
+    .memory-book-nav span {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(234, 203, 142, .58);
+      border-radius: 50%;
+      background: rgba(10, 34, 27, .72);
+      color: #f5dfae;
+      font-family: Georgia, serif;
+      font-size: 25px;
+      line-height: 1;
+      box-shadow: 0 7px 20px rgba(0, 0, 0, .28);
+    }
+
+    .memory-book-nav:disabled {
+      opacity: .16;
+      cursor: default;
+    }
+
+    .memory-book-close {
+      position: absolute;
+      top: 1.5%;
+      right: 1.5%;
+      z-index: 120;
+      padding: 8px 15px;
+      border: 1px solid rgba(235, 205, 145, .55);
+      border-radius: 999px;
+      background: rgba(8, 28, 22, .72);
+      color: #f6e6c5;
+      font-family: inherit;
+      font-size: 11px;
+      letter-spacing: .1em;
+      cursor: pointer;
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+    }
+
+    .memory-book-close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .memory-book-close:hover { background: rgba(28, 66, 51, .86); }
+
+    .memory-book-counter {
+      position: absolute;
+      left: 50%;
+      bottom: 1.5%;
+      z-index: 120;
+      transform: translateX(-50%);
+      color: rgba(248, 234, 207, .78);
+      font-size: 10px;
+      letter-spacing: .22em;
+      white-space: nowrap;
+    }
+
+    .memory-book-fly-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .memory-book-fly {
+      position: fixed;
+      overflow: hidden;
+      border: 1px solid rgba(197, 161, 101, .6);
+      border-radius: 7px;
+      background: #e9ddc8;
+      box-shadow: 0 14px 30px rgba(0, 0, 0, .38);
+      will-change: left, top, width, height, transform;
+    }
+
+    .memory-book-fly img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    body.memory-book-open { overflow: hidden; }
+
+    @media (max-width: 760px) {
+      .gallery-book-bar { margin: 16px 0 2px; }
+      .gallery-book-btn { padding: 10px 18px; font-size: 11.5px; }
+      .gallery-book-hint { font-size: 9.5px; }
+
+      .memory-book-overlay { padding: 0; }
+      .memory-book-stage { width: 100%; height: 78vh; }
+      .memory-book-shell { width: 86vw; height: 55vh; }
+      .memory-book-backlight { width: 88vw; height: 55vh; }
+      .memory-book-nav { width: 23%; opacity: .3; }
+      .memory-book-nav span { width: 35px; height: 35px; font-size: 21px; }
+      .memory-book-close { top: 1.2%; right: 1.5%; padding: 7px 11px; font-size: 10px; }
+      .memory-book-counter { bottom: 1.2%; font-size: 9px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .memory-book-page, .memory-book-fly { transition: none !important; }
+      .gallery-book-btn { transition: none; }
+    }
+  </style>
+
 </head>
 
 <body>
@@ -12747,7 +13118,12 @@ try {
           </div>
         </div>
 
-        
+        <div class="gallery-book-bar">
+          <button class="gallery-book-btn" id="galleryBookBtn" type="button" disabled>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.6c3-1 5.5-.4 8 1v12.8c-2.5-1.4-5-2-8-1V5.6Z"/><path d="M20 5.6c-3-1-5.5-.4-8 1v12.8c2.5-1.4 5-2 8-1V5.6Z"/></svg> 翻阅青春画册
+          </button>
+          <p class="gallery-book-hint" id="galleryBookHint">至少需要两张照片，才能翻成一本画册。</p>
+        </div>
       </section>
     </main>
 
@@ -21606,6 +21982,27 @@ function friendlyRemoteError(error) {
 })();
 
 </script>
+  <div class="memory-book-overlay" id="memoryBookOverlay" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="青春画册">
+    <div class="memory-book-backdrop" id="memoryBookBackdrop"></div>
+    <div class="memory-book-stage" id="memoryBookStage">
+      <div class="memory-book-backlight" aria-hidden="true"></div>
+      <div class="memory-book-shell" id="memoryBookShell">
+        <div class="memory-book-cover" aria-hidden="true"></div>
+        <div class="memory-book-spine" aria-hidden="true"></div>
+        <div class="memory-book-pages" id="memoryBookPages"></div>
+      </div>
+      <button class="memory-book-nav memory-book-nav--prev" id="memoryBookPrev" type="button" aria-label="上一页">
+        <span aria-hidden="true">‹</span>
+      </button>
+      <button class="memory-book-nav memory-book-nav--next" id="memoryBookNext" type="button" aria-label="下一页">
+        <span aria-hidden="true">›</span>
+      </button>
+      <button class="memory-book-close" id="memoryBookClose" type="button"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.6c3-1 5.5-.4 8 1v12.8c-2.5-1.4-5-2-8-1V5.6Z"/><path d="M20 5.6c-3-1-5.5-.4-8 1v12.8c2.5-1.4 5-2 8-1V5.6Z"/></svg> 收起画册</button>
+      <div class="memory-book-counter" id="memoryBookCounter">1 / 1</div>
+    </div>
+    <div class="memory-book-fly-layer" id="memoryBookFlyLayer" hidden></div>
+  </div>
+
   <script id="gallery-script">
   (function () {
     'use strict';
@@ -22189,7 +22586,372 @@ function friendlyRemoteError(error) {
     }
   })();
   </script>
-  
+
+  <script id="memory-book-script">
+  (function () {
+    'use strict';
+
+    var MAX_PAGES = 12;
+
+    function init() {
+      var grid = document.getElementById('galleryGrid');
+      var btn = document.getElementById('galleryBookBtn');
+      var hint = document.getElementById('galleryBookHint');
+      var overlay = document.getElementById('memoryBookOverlay');
+      var shell = document.getElementById('memoryBookShell');
+      var pagesBox = document.getElementById('memoryBookPages');
+      var flyLayer = document.getElementById('memoryBookFlyLayer');
+      var closeBtn = document.getElementById('memoryBookClose');
+      var prevBtn = document.getElementById('memoryBookPrev');
+      var nextBtn = document.getElementById('memoryBookNext');
+      var counter = document.getElementById('memoryBookCounter');
+      var backdrop = document.getElementById('memoryBookBackdrop');
+
+      if (!grid || !btn || !overlay || !pagesBox) return;
+
+      var gsap = window.gsap;
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var open = false;
+      var busy = false;
+      var current = 0;
+      var pages = [];
+      var sourceImages = [];
+      var originRects = [];
+      var targetRect = null;
+
+      function countTiles() {
+        return grid.querySelectorAll('.gallery-tile').length;
+      }
+
+      function updateButton() {
+        var count = Math.min(MAX_PAGES, countTiles());
+        btn.disabled = count < 2;
+        if (hint) {
+          hint.textContent = count < 2
+            ? '至少需要两张照片，才能翻成一本画册。'
+            : '取前 ' + count + ' 张照片，点击书页左右边缘翻页。';
+        }
+        btn.setAttribute('aria-label', count < 2 ? '翻阅青春画册（至少需要两张照片）' : '翻阅青春画册');
+      }
+
+      function rectOf(el) {
+        var r = el.getBoundingClientRect();
+        return { left: r.left, top: r.top, width: r.width, height: r.height };
+      }
+
+      function imageSrc(img) {
+        return img.currentSrc || img.src;
+      }
+
+      function makeFly(src, rect, z) {
+        var box = document.createElement('div');
+        box.className = 'memory-book-fly';
+        box.style.left = rect.left + 'px';
+        box.style.top = rect.top + 'px';
+        box.style.width = rect.width + 'px';
+        box.style.height = rect.height + 'px';
+        box.style.zIndex = String(z || 1);
+        var image = document.createElement('img');
+        image.src = src;
+        image.alt = '';
+        image.draggable = false;
+        box.appendChild(image);
+        flyLayer.appendChild(box);
+        return box;
+      }
+
+      function clearFly() {
+        flyLayer.hidden = true;
+        flyLayer.innerHTML = '';
+      }
+
+      function setPageZ() {
+        for (var i = 0; i < pages.length; i += 1) {
+          if (i < current) {
+            pages[i].style.zIndex = '1';
+            pages[i].style.visibility = 'hidden';
+          } else {
+            pages[i].style.zIndex = String(1000 - i);
+            pages[i].style.visibility = 'visible';
+          }
+        }
+      }
+
+      function updateCounter() {
+        counter.textContent = (current + 1) + ' / ' + pages.length;
+        prevBtn.disabled = current <= 0;
+        nextBtn.disabled = current >= pages.length - 1;
+        for (var i = 0; i < pages.length; i += 1) {
+          pages[i].classList.toggle('is-current', i === current);
+          pages[i].setAttribute('aria-hidden', i === current ? 'false' : 'true');
+        }
+      }
+
+      function resetPages() {
+        pagesBox.innerHTML = '';
+        pages = [];
+        current = 0;
+        busy = false;
+      }
+
+      function closeBook() {
+        if (!open || busy) return;
+        busy = true;
+        var target = targetRect || rectOf(pages[0]);
+        var clones = [];
+        for (var i = 0; i < pages.length; i += 1) {
+          clones.push(makeFly(sourceImages[i], target, 10 + i));
+        }
+        shell.style.visibility = 'hidden';
+        overlay.classList.remove('is-open');
+        if (!gsap || reduce) {
+          window.setTimeout(function () {
+            overlay.hidden = true;
+            overlay.style.opacity = '0';
+            document.body.classList.remove('memory-book-open');
+            clearFly();
+            resetPages();
+            open = false;
+            busy = false;
+            btn.focus();
+          }, 0);
+          return;
+        }
+        var tl = gsap.timeline({
+          onComplete: function () {
+            overlay.hidden = true;
+            overlay.style.opacity = '0';
+            document.body.classList.remove('memory-book-open');
+            clearFly();
+            resetPages();
+            open = false;
+            busy = false;
+            btn.focus();
+          }
+        });
+        tl.to(clones, {
+          left: function (index) { return originRects[index] ? originRects[index].left : target.left; },
+          top: function (index) { return originRects[index] ? originRects[index].top : target.top; },
+          width: function (index) { return originRects[index] ? originRects[index].width : target.width; },
+          height: function (index) { return originRects[index] ? originRects[index].height : target.height; },
+          opacity: 0.2,
+          duration: 0.9,
+          ease: 'power2.inOut',
+          stagger: 0.03
+        }, 0);
+        tl.to(overlay, { opacity: 0, duration: 0.55, ease: 'power2.inOut' }, 0.5);
+      }
+
+      function openBook() {
+        if (open || btn.disabled) return;
+        var tiles = Array.prototype.slice.call(grid.querySelectorAll('.gallery-tile')).slice(0, MAX_PAGES);
+        if (tiles.length < 2) return;
+
+        sourceImages = [];
+        originRects = [];
+        pagesBox.innerHTML = '';
+        pages = [];
+        current = 0;
+        for (var i = 0; i < tiles.length; i += 1) {
+          var img = tiles[i].querySelector('img');
+          if (!img) continue;
+          sourceImages.push(imageSrc(img));
+          originRects.push(rectOf(tiles[i]));
+
+          var page = document.createElement('div');
+          page.className = 'memory-book-page';
+          page.style.zIndex = String(1000 - i);
+          var image = document.createElement('img');
+          image.src = sourceImages[i];
+          image.alt = '青春画册第 ' + (i + 1) + ' 页';
+          image.draggable = false;
+          var shade = document.createElement('span');
+          shade.className = 'memory-book-page-shade';
+          var number = document.createElement('span');
+          number.className = 'memory-book-page-number';
+          number.textContent = String(i + 1).padStart(2, '0');
+          var inner = document.createElement('div');
+          inner.className = 'memory-book-page-inner';
+          inner.appendChild(image);
+          inner.appendChild(shade);
+          inner.appendChild(number);
+          page.appendChild(inner);
+          pagesBox.appendChild(page);
+          pages.push(page);
+        }
+
+        if (pages.length < 2) return;
+        open = true;
+        busy = false;
+        overlay.hidden = false;
+        overlay.style.opacity = '0';
+        overlay.setAttribute('aria-hidden', 'false');
+        overlay.classList.add('is-open');
+        document.body.classList.add('memory-book-open');
+        updateCounter();
+
+        if (!gsap || reduce) {
+          overlay.style.opacity = '1';
+          shell.style.visibility = 'visible';
+          for (var j = 0; j < pages.length; j += 1) pages[j].style.opacity = '1';
+          updateCounter();
+          closeBtn.focus();
+          return;
+        }
+
+        shell.style.visibility = 'hidden';
+        gsap.set(pages, { opacity: 0 });
+        gsap.set(overlay, { opacity: 0 });
+        requestAnimationFrame(function () {
+          targetRect = rectOf(pages[0]);
+          flyLayer.hidden = false;
+          flyLayer.innerHTML = '';
+          var clones = [];
+          for (var k = 0; k < sourceImages.length; k += 1) {
+            clones.push(makeFly(sourceImages[k], originRects[k], 10 + k));
+          }
+          var tl = gsap.timeline({
+            onComplete: function () {
+              shell.style.visibility = 'visible';
+              gsap.set(pages, { opacity: 1 });
+              clearFly();
+              busy = false;
+              updateCounter();
+              closeBtn.focus();
+            }
+          });
+          tl.to(overlay, { opacity: 1, duration: 0.45, ease: 'power2.out' }, 0);
+          tl.to(clones, {
+            left: targetRect.left,
+            top: targetRect.top,
+            width: targetRect.width,
+            height: targetRect.height,
+            duration: 1.0,
+            ease: 'power2.inOut',
+            stagger: 0.04
+          }, 0.08);
+          tl.to(clones, { opacity: 0, duration: 0.28, ease: 'power2.out' }, 0.9);
+          tl.call(function () {
+            shell.style.visibility = 'visible';
+            gsap.set(pages, { opacity: 1 });
+          }, null, 0.94);
+        });
+      }
+
+      function nextPage() {
+        if (!open || busy || current >= pages.length - 1) return;
+        var page = pages[current];
+        var shade = page.querySelector('.memory-book-page-shade');
+        if (!gsap || reduce) {
+          page.style.visibility = 'hidden';
+          page.style.zIndex = '1';
+          current += 1;
+          setPageZ();
+          updateCounter();
+          return;
+        }
+        busy = true;
+        gsap.set(page, { rotationY: 0 });
+        var tl = gsap.timeline({
+          onComplete: function () {
+            page.style.visibility = 'hidden';
+            page.style.zIndex = '1';
+            gsap.set(shade, { opacity: 0 });
+            current += 1;
+            setPageZ();
+            updateCounter();
+            busy = false;
+          }
+        });
+        tl.to(page, { rotationY: -180, duration: 0.86, ease: 'power2.inOut' }, 0);
+        tl.fromTo(shade, { opacity: 0 }, { opacity: 0.5, duration: 0.3, yoyo: true, repeat: 1, ease: 'power2.inOut' }, 0);
+      }
+
+      function prevPage() {
+        if (!open || busy || current <= 0) return;
+        var page = pages[current - 1];
+        var shade = page.querySelector('.memory-book-page-shade');
+        if (!gsap || reduce) {
+          page.style.visibility = 'visible';
+          page.style.zIndex = String(1000 - (current - 1));
+          current -= 1;
+          setPageZ();
+          updateCounter();
+          return;
+        }
+        busy = true;
+        gsap.set(pages[current], { rotationY: 0 });
+        page.style.visibility = 'visible';
+        page.style.zIndex = '2000';
+        var tl = gsap.timeline({
+          onComplete: function () {
+            gsap.set(shade, { opacity: 0 });
+            current -= 1;
+            page.style.zIndex = String(1000 - current);
+            setPageZ();
+            updateCounter();
+            busy = false;
+          }
+        });
+        tl.to(page, { rotationY: 0, duration: 0.86, ease: 'power2.inOut' }, 0);
+        tl.fromTo(shade, { opacity: 0 }, { opacity: 0.5, duration: 0.3, yoyo: true, repeat: 1, ease: 'power2.inOut' }, 0);
+      }
+
+      function peek(direction) {
+        if (!open || busy || !gsap || reduce) return;
+        var page = pages[current];
+        if (!page) return;
+        gsap.to(page, { rotationY: direction * 4, duration: 0.24, ease: 'power2.out', overwrite: true });
+      }
+
+      function unpeek() {
+        if (!open || busy || !gsap || reduce) return;
+        var page = pages[current];
+        if (!page) return;
+        gsap.to(page, { rotationY: 0, duration: 0.24, ease: 'power2.out', overwrite: true });
+      }
+
+      btn.addEventListener('click', openBook);
+      closeBtn.addEventListener('click', closeBook);
+      backdrop.addEventListener('click', closeBook);
+      nextBtn.addEventListener('click', nextPage);
+      prevBtn.addEventListener('click', prevPage);
+      prevBtn.addEventListener('mouseenter', function () { peek(1); });
+      nextBtn.addEventListener('mouseenter', function () { peek(-1); });
+      prevBtn.addEventListener('mouseleave', unpeek);
+      nextBtn.addEventListener('mouseleave', unpeek);
+
+      document.addEventListener('keydown', function (event) {
+        if (!open) return;
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          closeBook();
+        } else if (event.key === 'ArrowRight') {
+          event.preventDefault();
+          nextPage();
+        } else if (event.key === 'ArrowLeft') {
+          event.preventDefault();
+          prevPage();
+        }
+      });
+
+      updateButton();
+      if (window.MutationObserver) {
+        new MutationObserver(updateButton).observe(grid, { childList: true, subtree: true });
+      }
+      window.addEventListener('resize', function () {
+        if (open && !busy && pages[0]) targetRect = rectOf(pages[0]);
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init, { once: true });
+    } else {
+      init();
+    }
+  })();
+  </script>
+
 <div class="online-list-modal" id="onlineListModal" hidden>
   <div class="online-list-card" role="dialog" aria-modal="true" aria-labelledby="onlineListTitle">
     <div class="online-list-head">
