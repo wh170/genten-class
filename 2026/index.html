@@ -10750,6 +10750,15 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
   #splashScreen:focus { outline: none; }
   #splashScreen .splash-media { position: absolute; inset: 0; width: 100%; height: 100%; display: block; margin: 0; pointer-events: none; }
   #splashScreen .splash-media img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; user-select: none; -webkit-user-drag: none; }
+  #splashScreen .splash-bg-fallback { position:absolute; inset:-4%; z-index:0; pointer-events:none; background-size:cover; background-position:center; filter:blur(18px) saturate(1.08); transform:scale(1.025); }
+  #splashScreen .splash-bg-fallback--mobile { display:none; }
+  #splashScreen .splash-hand-picture { opacity:0; transition:opacity .4s ease; }
+  body.splash-bg-ready #splashScreen .splash-hand-picture { opacity:1; }
+  @media (max-width:760px) {
+    #splashScreen .splash-bg-fallback--desktop { display:none; }
+    #splashScreen .splash-bg-fallback--mobile { display:block; }
+  }
+
   #splashScreen .splash-bg-picture { z-index: 0; }
   #splashScreen .splash-bg { filter: saturate(1.04) contrast(1.02); transform: scale(1.012); }
   #splashScreen .splash-dim { position: absolute; inset: 0; z-index: 1; pointer-events: none; background:
@@ -12444,16 +12453,18 @@ try {
 })();
 </script>
 <div id="splashScreen" role="button" tabindex="0" aria-label="数风流人物，还看今朝。轻触屏幕，开启我们的故事">
+  <div class="splash-bg-fallback splash-bg-fallback--desktop" aria-hidden="true" style="background-image:url(data:image/webp;base64,UklGRtICAABXRUJQVlA4IMYCAADwEQCdASpgADYAPrVSoUynJKMlqBgLiOAWiUAXOZHSO1U2PI1aNwuqO+fvAPlCI+F2j9zDzPMEW9htAwEZejHFqpFc0jz7uOUOaPuyvu2/Q4WUBclQ35KDJzRLwgGP+o6qa2dYmWIRbPcFJ/UtUlfqcul4nnikpldxBn7Zecuao8MZFR3U1Lv4sY9JNNPHEVeQosFgCgaYgAD++RhtC9wuxwD2TbUYK/eao94EJVKkTEw0b2WqTzS6Pz53H7D3YqrXu57f4XD3E6iKRu1eMIfn/CcRkBcgt3Di0F2lSeHVded3/DuD3T5ryZVGi7svJCf0OVClev5KNpiapALc+KX3nRdbvQo2kJlUS0L7pnYbsppp3lnBYu8AqxuMgcfyvcNPWNUJ6BSet6GGw5oaAUp7OFQTC3mrk3RVOtcWKwygl1sqQGnfKVAWYMfELPT/2Mg6JmCKTUY4cAAo3gy681F48Gj0s95NGGNv3waRyJD+j7Kfw1I/4tON0lRPXvOWbFYw8BACCwWMlfHylC6aBs3N868If+twCGgJB/souPx9vtJURC0iooyoR+dlirtCqM1kZoZAWtFuhBygHb0drRhKxNTTiUOEEHwepxT8SUehTQrsGOEAQw+Tso0Li4uBmr3CGD11ZOvrBjmktZUmuA8qnmlc7qAAYNlQAeLCuCy9DnUwT5v7XAnehlFXlhIodS0cQW8PVQYOK26j5jlXUJaKccS2/SdrTzgriT3sYJ7Fsoj4rJjqhhPEmJusF8mklBcR/isCnjeip6EYKII7H73k1avTd0GRAIx02e6ptdaYT3vsm82kbXEpmr0sHjoETM41TFLi7n0RA34IAq+6iWrJtyH0i0dXjYLbIkAQo7FVqLnjZarTLqplhagACV3qIM93C+uubrQv0oVGFeFKO4VxmK0hwpHCAyqhXtIVtV6rHnyk2zwAAA==)"></div>
+  <div class="splash-bg-fallback splash-bg-fallback--mobile" aria-hidden="true" style="background-image:url(data:image/webp;base64,UklGRngBAABXRUJQVlA4IGwBAAAQCQCdASoeADYAPrVMn0onJCKhrBqsyOAWiWQAxQuPaSzHT37THELus9gxZLTvTS4Hq3qob3sW4aVhw/KcsWQ6p2KUalA5y/dl8at3rjrSAoAA/vlJtrFF4piN/18jOYHHrSVCY11Sy/zslIAGuQwaVy3FPuDNgeKFIJ6lKOtZDPha5C7T5eZoHlpv7fYJbuhL9rjdLL3pBMS9rxIH/p0dYlPJkUFLDYy4gAPsR1qfkYp0/s+hxK8+n38HoVwsC2P4dRa+Q5f4laz6XJzxuU1Cj8za5eQAkriF5g2MHFjmdBEeG3iAp4wr5sP0vyFrHOX0PNyVuMDwaqJ0183k5W9wHFrapoAKJB6dnOK0BOVXJBQS3P+rK3x3WHAGOQV1fa92rxz411784bWskwB+hwCLhkZOZ3s/qz246RhnSrIy+T4QKsymenoqQ0DtRgbgiIO0ZmUlIFgIcrnQFTD0AAJN/4r0tqOqyYcwINAA)"></div>
   <picture class="splash-media splash-bg-picture">
     <source media="(max-width: 760px)" data-splash-srcset="assets/630cba768b7b.webp">
-    <img class="splash-bg" loading="lazy" decoding="async" alt="朝霞与红旗前伸手的青年，右侧是手托朝阳的伟人雕像" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" data-splash-src="assets/d8fcd40989a6.webp">
+    <img class="splash-bg" loading="eager" fetchpriority="high" decoding="async" alt="朝霞与红旗前伸手的青年，右侧是手托朝阳的伟人雕像" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" data-splash-src="assets/d8fcd40989a6.webp">
   </picture>
   <div class="splash-dim"></div>
   <div class="splash-mist"></div>
   <div class="splash-glow" aria-hidden="true"></div>
   <picture class="splash-media splash-hand-picture" aria-hidden="true">
     <source media="(max-width: 760px)" data-splash-srcset="assets/c03e166e4103.webp">
-    <img class="splash-hand" loading="lazy" decoding="async" alt="" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" data-splash-src="assets/339f37d41a7b.webp">
+    <img class="splash-hand" loading="eager" fetchpriority="high" decoding="async" alt="" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" data-splash-src="assets/339f37d41a7b.webp">
   </picture>
 
   
@@ -25169,7 +25180,7 @@ function friendlyRemoteError(error) {
           source.setAttribute("srcset", ss);
           source.removeAttribute("data-splash-srcset");
         }
-        return;
+        return img;
       }
       if (img) {
         var src = img.getAttribute("data-splash-src");
@@ -25178,9 +25189,17 @@ function friendlyRemoteError(error) {
           img.removeAttribute("data-splash-src");
         }
       }
+      return img;
     }
-    warmPicture(".splash-bg-picture");
+    var bgImg = warmPicture(".splash-bg-picture");
     warmPicture(".splash-hand-picture");
+    if (bgImg) {
+      var bgReady = function () {
+        if (bgImg.naturalWidth > 2) document.body.classList.add("splash-bg-ready");
+      };
+      if (bgImg.complete && bgImg.naturalWidth > 2) bgReady();
+      else bgImg.addEventListener("load", bgReady, { once: true });
+    }
   }
 
   warmSplash();
