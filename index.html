@@ -10752,6 +10752,12 @@ input:focus, select:focus, textarea:focus { border-color: rgba(140, 106, 52, 0.5
   #splashScreen .splash-media img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; user-select: none; -webkit-user-drag: none; }
   #splashScreen .splash-bg-fallback { position:absolute; inset:-4%; z-index:0; pointer-events:none; background-size:cover; background-position:center; filter:blur(18px) saturate(1.08); transform:scale(1.025); }
   #splashScreen .splash-bg-fallback--mobile { display:none; }
+  #splashScreen .splash-bg-picture {
+    opacity: 0;
+    transition: opacity .5s ease;
+  }
+  body.splash-bg-ready #splashScreen .splash-bg-picture { opacity: 1; }
+
   #splashScreen .splash-hand-picture { opacity:0; transition:opacity .4s ease; }
   body.splash-bg-ready #splashScreen .splash-hand-picture { opacity:1; }
   @media (max-width:760px) {
